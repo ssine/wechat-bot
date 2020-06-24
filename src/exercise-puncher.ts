@@ -68,7 +68,7 @@ class ExercisePuncher {
         await this.room.say(
           `欢迎使用打卡 bot ，支持的指令：
 打卡： 进行每日打卡
-周赛： 功能开发中
+周赛： 记录周赛
 帮助： 显示本条帮助`)
       }
     })
