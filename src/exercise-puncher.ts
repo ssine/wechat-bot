@@ -41,6 +41,7 @@ class ExercisePuncher {
   room: Room
   data: ExercisePuncherData
   inProcess: Set<string>
+  writeQueue: Promise<unknown>[]
 
   constructor(bot: Wechaty, config: ExercisePuncherConfig) {
     this.bot = bot
@@ -50,6 +51,7 @@ class ExercisePuncher {
       contests: []
     }
     this.inProcess = new Set()
+    this.writeQueue = []
   }
 
   async init() {
@@ -222,8 +224,16 @@ class ExercisePuncher {
   }
 
   async saveData() {
-    await fs.promises.writeFile(this.config.fileName, JSON.stringify(this.data, null, 2))
-    return
+    const promise = new Promise(async (resolve, reject) => {
+      if (this.writeQueue.length > 0) {
+        await this.writeQueue[this.writeQueue.length - 1]
+      }
+      await fs.promises.writeFile(this.config.fileName, JSON.stringify(this.data, null, 2))
+      resolve()
+      this.writeQueue.splice(0, 1)
+    })
+    this.writeQueue.push(promise)
+    return promise
   }
 
   async loadData() {
