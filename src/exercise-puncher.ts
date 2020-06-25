@@ -108,15 +108,27 @@ class ExercisePuncher {
       return
     }
 
-    await this.room.say(`[${name}] 开始打卡。 请输入今天做题个数：`)
+    const save = async () => {
+      this.data.infos.push(info)
+      await this.saveData()
+      await this.room.say(`[${name}] 打卡内容已记录。 您已连续打卡 ${this.getConsecutivePunchNum(info.id)} 天，感谢使用^_^`)
+    }
+
+    await this.room.say(`[${name}] 开始打卡。 回复“数字 .”或“数字 。”只记录做题个数，回复取消中止打卡。 请输入今天做题个数：`)
     try {
       while (true) {
         const reply = await waitMsg()
-        const exerciseNumber = parseInt(reply.text())
+        const text = reply.text()
+        const exerciseNumber = parseInt(text)
         if (isNaN(exerciseNumber)) {
           await this.room.say(`输入数字无效。 请输入正整数：`)
         } else {
           info.num = exerciseNumber
+          if (text[text.length - 1] === '.' || text[text.length - 1] === '。') {
+            await save()
+            this.inProcess.delete(contact.id)
+            return
+          }
           break
         }
       }
@@ -138,10 +150,7 @@ class ExercisePuncher {
       }
       await this.room.say(commentResponse)
 
-      this.data.infos.push(info)
-      await this.saveData()
-      await this.room.say(`[${name}] 打卡内容已记录。 您已连续打卡 ${this.getConsecutivePunchNum(info.id)} 天，感谢使用^_^`)
-
+      await save()
     } catch (err) {
       await this.room.say(`[${name}] 打卡取消。`)
     }
