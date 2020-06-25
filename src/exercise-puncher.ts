@@ -302,7 +302,7 @@ class ExercisePuncher {
     await this.room.say(
       `${now.format('YYYY年MM月DD日 日报')}
 今日有 ${peopleCount} 人打卡，共完成 ${problemCount} 道题目。
-推荐好题： ${recommends.join(', ')}`)
+推荐好题： ${recommends.length > 0 ? recommends.join(', ') : '无'}`)
   }
 
 }
