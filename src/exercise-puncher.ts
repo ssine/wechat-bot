@@ -64,24 +64,31 @@ class ExercisePuncher {
     this.room.on('message', async (msg, date) => {
       if (msg.text() === '打卡') {
         this.punchExercise(msg.from(), date)
+      } else if (/^打卡\s*\d+$/.test(msg.text())) {
+        this.punchExercise(msg.from(), date, parseInt(/^打卡\s*(\d+)$/.exec(msg.text())[1]))
       } else if (msg.text() === '周赛') {
         this.punchContest(msg.from(), date)
       } else if (msg.text() === '帮助') {
         await this.room.say(
           `欢迎使用打卡 bot ，支持的指令：
-打卡： 进行每日打卡
-周赛： 记录周赛
-帮助： 显示本条帮助`)
+【打卡】 进行每日打卡
+可以通过 “打卡 [题目个数]” 的方式快捷打卡（例如“打卡 3”）
+在对话中回复“取消”随时终止打卡
+【周赛】 记录周赛
+【帮助】 显示本条帮助`)
       }
     })
 
     new CronJob('0 59 23 * * *', () => {
-      // new CronJob('0 45 2 * * *', () => {
       this.dailyReport()
-    }, null, true, 'Asia/Shanghai');
+    }, null, true, 'Asia/Shanghai')
+
+    new CronJob('1 59 23 * * 6', () => {
+      this.weeklyReport()
+    }, null, true, 'Asia/Shanghai')
   }
 
-  async punchExercise(contact: Contact, date: Date) {
+  async punchExercise(contact: Contact, date: Date, directNumber?: number) {
     if (this.inProcess.has(contact.id)) {
       await this.room.say(`[${contact.name()}] 已在打卡对话中。`)
       return
@@ -105,7 +112,9 @@ class ExercisePuncher {
     const previous = this.data.infos.filter((info) => info.id == contact.id)
     const hasPrevious = previous.length > 0 && isSameDay(previous[previous.length - 1].time, info.time)
     if (hasPrevious) {
-      await this.room.say(`[${name}] 今天已经打过卡了，继续操作将覆盖上次打卡。`)
+      if (directNumber) await this.room.say(`[${name}] 今天已经打过卡了，将覆盖上次打卡。`)
+      else await this.room.say(`[${name}] 今天已经打过卡了，继续操作将覆盖上次打卡。`)
+      previous[previous.length - 1].time = info.time
       info = previous[previous.length - 1]
     }
 
@@ -114,6 +123,13 @@ class ExercisePuncher {
         this.data.infos.push(info)
       await this.saveData()
       await this.room.say(`[${name}] 打卡内容已记录。 您已连续打卡 ${this.getConsecutivePunchNum(info.id)} 天，感谢使用^_^`)
+    }
+
+    if (directNumber) {
+      info.num = directNumber
+      await save()
+      this.inProcess.delete(contact.id)
+      return
     }
 
     await this.room.say(`[${name}] 开始打卡。 回复“数字 .”或“数字 。”只记录做题个数，回复取消中止打卡。 请输入今天做题个数：`)
@@ -305,6 +321,36 @@ class ExercisePuncher {
       `${now.format('YYYY年MM月DD日 日报')}
 今日有 ${peopleCount} 人打卡，共完成 ${problemCount} 道题目。
 推荐好题： ${recommends.length > 0 ? recommends.join(', ') : '无'}`)
+  }
+
+  async weeklyReport() {
+    let now = moment()
+    let beginTime = now.endOf('week').subtract(1, 'week')
+    let thisWeeks = this.data.infos.filter((info) => info.time > beginTime)
+    let peoples: Set<string> = new Set()
+    let problemCount = 0
+    let recommends = []
+    for (let info of thisWeeks) {
+      peoples.add(info.id)
+      problemCount += info.num
+      if (info.recommend !== '') {
+        recommends.push(info.recommend)
+      }
+    }
+    let peopleWithoutPunch = []
+    const members = await this.room.memberAll()
+    for (let member of members) {
+      if (!peoples.has(member.id)) {
+        const alias = await this.room.alias(member)
+        const name = alias ? alias : member.name()
+        peopleWithoutPunch.push(name)
+      }
+    }
+    await this.room.say(
+      `${now.year()} 年第 ${now.week()} 周 周报
+本周有 ${peoples.size} 人进行了 ${thisWeeks.length} 次打卡，共完成 ${problemCount} 道题目。
+推荐好题： ${recommends.length > 0 ? recommends.join(', ') : '无'}。
+未打卡人员： ${peopleWithoutPunch.length > 0 ? peopleWithoutPunch.join(', ') : '无'}。`)
   }
 
 }
