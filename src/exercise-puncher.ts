@@ -102,14 +102,16 @@ class ExercisePuncher {
     info.name = name
     info.id = contact.id
 
-    let previous = this.data.infos.filter((info) => info.id == contact.id)
-    if (previous.length > 0 && isSameDay(previous[previous.length - 1].time, info.time)) {
-      await this.room.say(`[${name}] 今天已经打过卡啦。`)
-      return
+    const previous = this.data.infos.filter((info) => info.id == contact.id)
+    const hasPrevious = previous.length > 0 && isSameDay(previous[previous.length - 1].time, info.time)
+    if (hasPrevious) {
+      await this.room.say(`[${name}] 今天已经打过卡了，继续操作将覆盖上次打卡。`)
+      info = previous[previous.length - 1]
     }
 
     const save = async () => {
-      this.data.infos.push(info)
+      if (!hasPrevious)
+        this.data.infos.push(info)
       await this.saveData()
       await this.room.say(`[${name}] 打卡内容已记录。 您已连续打卡 ${this.getConsecutivePunchNum(info.id)} 天，感谢使用^_^`)
     }
