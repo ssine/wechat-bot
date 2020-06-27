@@ -378,10 +378,10 @@ class ExercisePuncher {
       return `${rec.content}@${rec.name}${rec.comment ? '：' + rec.comment : ''}`
     }).join('\n')
 
-    // await this.room.say(
-    console.log(
+    await this.room.say(
       `${now.year()} 年第 ${now.week()} 周 周报
 本周有 ${Object.keys(personStats).length} 人进行了 ${thisWeeks.length} 次打卡，共完成 ${problemCount} 道题目。
+
 【打卡排行榜】
 ${rankBoard}
 

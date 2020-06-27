@@ -10,5 +10,4 @@ import config from './config'
 
   const puncher = new ExercisePuncher(bot, config.exercisePuncher)
   await puncher.init()
-  await puncher.weeklyReport()
 })()
