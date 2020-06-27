@@ -211,7 +211,7 @@ class ExercisePuncher {
       while (true) {
         const reply = await waitMsg()
         const exerciseNumber = parseInt(reply.text())
-        if (isNaN(exerciseNumber) || exerciseNumber <= 0 || exerciseNumber > 4) {
+        if (isNaN(exerciseNumber) || exerciseNumber < 0 || exerciseNumber > 4) {
           await this.room.say(`输入数字无效。 请输入 0 - 4 之间的正整数：`)
         } else {
           info.num = exerciseNumber
