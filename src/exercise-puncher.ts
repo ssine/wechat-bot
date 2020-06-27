@@ -327,9 +327,10 @@ class ExercisePuncher {
 推荐好题： ${recommends.length > 0 ? recommends.join(', ') : '无'}`)
   }
 
+  // should be called each sunday
   async weeklyReport() {
     let now = moment()
-    let beginTime = now.endOf('week').subtract(1, 'week')
+    let beginTime = now.endOf('week').subtract(6, 'days').subtract(1, 'week')
     let thisWeeks = this.data.infos.filter((info) => info.time > beginTime)
     type Stat = {
       name: string
