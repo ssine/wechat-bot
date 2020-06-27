@@ -327,30 +327,66 @@ class ExercisePuncher {
     let now = moment()
     let beginTime = now.endOf('week').subtract(1, 'week')
     let thisWeeks = this.data.infos.filter((info) => info.time > beginTime)
-    let peoples: Set<string> = new Set()
+    type Stat = {
+      name: string
+      problemNumberWeek: number
+      punchNumberWeek: number
+    }
+    type Recommend = {
+      name: string
+      content: string
+      comment: string
+    }
+    let personStats: { [id: string]: Stat } = {}
     let problemCount = 0
-    let recommends = []
+    let recommends: Recommend[] = []
     for (let info of thisWeeks) {
-      peoples.add(info.id)
+      if (info.id in personStats) {
+        personStats[info.id].problemNumberWeek += info.num
+        personStats[info.id].punchNumberWeek += 1
+      } else {
+        personStats[info.id] = {
+          name: info.name,
+          problemNumberWeek: info.num,
+          punchNumberWeek: 1
+        }
+      }
       problemCount += info.num
       if (info.recommend !== '') {
-        recommends.push(info.recommend)
+        recommends.push({ name: info.name, content: info.recommend, comment: info.comment })
       }
     }
+
     let peopleWithoutPunch = []
     const members = await this.room.memberAll()
     for (let member of members) {
-      if (!peoples.has(member.id)) {
+      if (!(member.id in personStats)) {
         const alias = await this.room.alias(member)
         const name = alias ? alias : member.name()
         peopleWithoutPunch.push(name)
       }
     }
-    await this.room.say(
+
+    let rankBoard = ['排名 | 昵称 | 做题数 | 打卡天数'].concat(Object.values(personStats).sort((a, b) => {
+      return a.problemNumberWeek === b.problemNumberWeek ? b.punchNumberWeek - a.punchNumberWeek : b.problemNumberWeek - a.problemNumberWeek
+    }).map((stat, idx) => {
+      return `${idx + 1} | ${stat.name} | ${stat.problemNumberWeek} | ${stat.punchNumberWeek}`
+    })).join('\n')
+
+    let recommentsString = recommends.map((rec) => {
+      return `${rec.content}@${rec.name}${rec.comment ? '：' + rec.comment : ''}`
+    }).join('\n')
+
+    // await this.room.say(
+    console.log(
       `${now.year()} 年第 ${now.week()} 周 周报
-本周有 ${peoples.size} 人进行了 ${thisWeeks.length} 次打卡，共完成 ${problemCount} 道题目。
-推荐好题： ${recommends.length > 0 ? recommends.join(', ') : '无'}。
-未打卡人员： ${peopleWithoutPunch.length > 0 ? peopleWithoutPunch.join(', ') : '无'}。`)
+本周有 ${Object.keys(personStats).length} 人进行了 ${thisWeeks.length} 次打卡，共完成 ${problemCount} 道题目。
+【打卡排行榜】
+${rankBoard}
+【推荐好题】
+${recommentsString === '' ? '无' : recommentsString}
+【未打卡成员】
+${peopleWithoutPunch.length > 0 ? peopleWithoutPunch.join(', ') : '无'}`)
   }
 
 }
