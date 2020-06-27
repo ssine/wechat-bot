@@ -360,6 +360,7 @@ class ExercisePuncher {
     let peopleWithoutPunch = []
     const members = await this.room.memberAll()
     for (let member of members) {
+      if (member.self()) continue
       if (!(member.id in personStats)) {
         const alias = await this.room.alias(member)
         const name = alias ? alias : member.name()
@@ -367,10 +368,10 @@ class ExercisePuncher {
       }
     }
 
-    let rankBoard = ['排名 | 昵称 | 做题数 | 打卡天数'].concat(Object.values(personStats).sort((a, b) => {
+    let rankBoard = ['排名　昵称　做题数　打卡天数'].concat(Object.values(personStats).sort((a, b) => {
       return a.problemNumberWeek === b.problemNumberWeek ? b.punchNumberWeek - a.punchNumberWeek : b.problemNumberWeek - a.problemNumberWeek
     }).map((stat, idx) => {
-      return `${idx + 1} | ${stat.name} | ${stat.problemNumberWeek} | ${stat.punchNumberWeek}`
+      return `${idx + 1}　${stat.name}　${stat.problemNumberWeek}　${stat.punchNumberWeek}`
     })).join('\n')
 
     let recommentsString = recommends.map((rec) => {
@@ -383,9 +384,11 @@ class ExercisePuncher {
 本周有 ${Object.keys(personStats).length} 人进行了 ${thisWeeks.length} 次打卡，共完成 ${problemCount} 道题目。
 【打卡排行榜】
 ${rankBoard}
+
 【推荐好题】
 ${recommentsString === '' ? '无' : recommentsString}
-【未打卡成员】
+
+【本周未打卡成员】
 ${peopleWithoutPunch.length > 0 ? peopleWithoutPunch.join(', ') : '无'}`)
   }
 
