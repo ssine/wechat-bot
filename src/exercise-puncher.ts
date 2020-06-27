@@ -84,7 +84,7 @@ class ExercisePuncher {
       this.dailyReport()
     }, null, true, 'Asia/Shanghai')
 
-    new CronJob('1 59 23 * * 6', () => {
+    new CronJob('1 59 23 * * 7', () => {
       this.weeklyReport()
     }, null, true, 'Asia/Shanghai')
   }
