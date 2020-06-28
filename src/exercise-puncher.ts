@@ -198,13 +198,6 @@ class ExercisePuncher {
     info.id = contact.id
 
     if (!this.data.contests) this.data.contests = []    
-    let previous = this.data.contests.filter((info) => info.id == contact.id)
-    const hasPrevious = previous.length > 0 && isSameDay(previous[previous.length - 1].time, info.time)
-    if (hasPrevious) {
-      await this.room.say(`[${name}] 今天已经记录过周赛啦，继续操作将覆盖上次记录。`)
-      previous[previous.length - 1].time = info.time
-      info = previous[previous.length - 1]
-    }
 
     await this.room.say(`[${name}] 开始记录周赛。 请输入 AC 个数：`)
     try {
@@ -243,8 +236,7 @@ class ExercisePuncher {
       }
       await this.room.say(commentResponse)
 
-      if (!hasPrevious)
-        this.data.contests.push(info)
+      this.data.contests.push(info)
       await this.saveData()
       await this.room.say(`[${name}] 周赛内容已记录，感谢使用^_^`)
 
