@@ -266,6 +266,9 @@ class ExercisePuncher {
       for (let key in this.data.infos) {
         this.data.infos[key].time = moment(this.data.infos[key].time)
       }
+      for (let key in this.data.contests) {
+        this.data.contests[key].time = moment(this.data.contests[key].time)
+      }
       return
     } catch (err) {
       console.log(err)
