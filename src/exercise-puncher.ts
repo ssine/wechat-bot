@@ -95,6 +95,11 @@ class ExercisePuncher {
       return
     }
     this.inProcess.add(contact.id)
+    if (directNumber !== undefined && directNumber <= 0) {
+      await this.room.say(`[${contact.name()}] 输入数字无效，打卡结束。`)
+      this.inProcess.delete(contact.id)
+      return
+    }
     const waitMsg = async () => {
       const reply = await this.bot.waitForMessage({ room: this.room.id, contact: contact.id })
       if (reply.text() === '取消') {
@@ -113,7 +118,7 @@ class ExercisePuncher {
     const previous = this.data.infos.filter((info) => info.id == contact.id)
     const hasPrevious = previous.length > 0 && isSameDay(previous[previous.length - 1].time, info.time)
     if (hasPrevious) {
-      if (directNumber) await this.room.say(`[${name}] 今天已经打过卡了，将覆盖上次打卡。`)
+      if (directNumber !== undefined) await this.room.say(`[${name}] 今天已经打过卡了，将覆盖上次打卡。`)
       else await this.room.say(`[${name}] 今天已经打过卡了，继续操作将覆盖上次打卡。`)
       previous[previous.length - 1].time = info.time
       info = previous[previous.length - 1]
@@ -126,7 +131,7 @@ class ExercisePuncher {
       await this.room.say(`[${name}] 打卡内容已记录。 您已连续打卡 ${this.getConsecutivePunchNum(info.id)} 天，感谢使用^_^`)
     }
 
-    if (directNumber) {
+    if (directNumber !== undefined) {
       info.num = directNumber
       await save()
       this.inProcess.delete(contact.id)
@@ -139,7 +144,7 @@ class ExercisePuncher {
         const reply = await waitMsg()
         const text = reply.text()
         const exerciseNumber = parseInt(text)
-        if (isNaN(exerciseNumber)) {
+        if (isNaN(exerciseNumber) || exerciseNumber <= 0) {
           await this.room.say(`输入数字无效。 请输入正整数：`)
         } else {
           info.num = exerciseNumber
