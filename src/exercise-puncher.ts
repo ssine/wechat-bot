@@ -90,95 +90,101 @@ class ExercisePuncher {
   }
 
   async punchExercise(contact: Contact, date: Date, directNumber?: number) {
-    if (this.inProcess.has(contact.id)) {
-      await this.room.say(`[${contact.name()}] 已在打卡对话中。`)
-      return
-    }
-    this.inProcess.add(contact.id)
-    if (directNumber !== undefined && directNumber <= 0) {
-      await this.room.say(`[${contact.name()}] 输入数字无效，打卡结束。`)
-      this.inProcess.delete(contact.id)
-      return
-    }
-    const waitMsg = async () => {
-      const reply = await this.bot.waitForMessage({ room: this.room.id, contact: contact.id })
-      if (reply.text() === '取消') {
-        throw new Error('cancel')
-      }
-      return reply
-    }
-
-    let info = new ExercisePunchInfo()
-    info.time = moment(date)
-    const alias = await this.room.alias(contact)
-    const name = alias ? alias : contact.name()
-    info.name = name
-    info.id = contact.id
-
-    const previous = this.data.infos.filter((info) => info.id == contact.id)
-    const hasPrevious = previous.length > 0 && isSameDay(previous[previous.length - 1].time, info.time)
-    if (hasPrevious) {
-      if (directNumber !== undefined) await this.room.say(`[${name}] 今天已经打过卡了，将覆盖上次打卡。`)
-      else await this.room.say(`[${name}] 今天已经打过卡了，继续操作将覆盖上次打卡。`)
-      previous[previous.length - 1].time = info.time
-      info = previous[previous.length - 1]
-    }
-
-    const save = async () => {
-      if (!hasPrevious)
-        this.data.infos.push(info)
-      await this.saveData()
-      await this.room.say(`[${name}] 打卡内容已记录。 您已连续打卡 ${this.getConsecutivePunchNum(info.id)} 天，感谢使用^_^`)
-    }
-
-    if (directNumber !== undefined) {
-      info.num = directNumber
-      await save()
-      this.inProcess.delete(contact.id)
-      return
-    }
-
-    await this.room.say(`[${name}] 开始打卡。 回复“数字 .”或“数字 。”只记录做题个数，回复取消中止打卡。 请输入今天做题个数：`)
     try {
-      while (true) {
-        const reply = await waitMsg()
-        const text = reply.text()
-        const exerciseNumber = parseInt(text)
-        if (isNaN(exerciseNumber) || exerciseNumber <= 0) {
-          await this.room.say(`输入数字无效。 请输入正整数：`)
-        } else {
-          info.num = exerciseNumber
-          if (text[text.length - 1] === '.' || text[text.length - 1] === '。') {
-            await save()
-            this.inProcess.delete(contact.id)
-            return
-          }
-          break
+      if (this.inProcess.has(contact.id)) {
+        await this.room.say(`[${contact.name()}] 已在打卡对话中。`)
+        return
+      }
+      this.inProcess.add(contact.id)
+      if (directNumber !== undefined && directNumber <= 0) {
+        await this.room.say(`[${contact.name()}] 输入数字无效，打卡结束。`)
+        this.inProcess.delete(contact.id)
+        return
+      }
+      const waitMsg = async () => {
+        const reply = await this.bot.waitForMessage({ room: this.room.id, contact: contact.id })
+        if (reply.text() === '取消') {
+          throw new Error('cancel')
         }
+        return reply
       }
 
-      await this.room.say(`请输入推荐好题，无推荐请回复 n 。`)
-      let reply = await waitMsg()
-      let recommendResponse = '无推荐。'
-      if (reply.text().trim() !== 'n') {
-        info.recommend = reply.text()
-        recommendResponse = '推荐题目已记录。'
+      let info = new ExercisePunchInfo()
+      info.time = moment(date)
+      const alias = await this.room.alias(contact)
+      const name = alias ? alias : contact.name()
+      info.name = name
+      info.id = contact.id
+
+      const previous = this.data.infos.filter((info) => info.id == contact.id)
+      const hasPrevious = previous.length > 0 && isSameDay(previous[previous.length - 1].time, info.time)
+      if (hasPrevious) {
+        if (directNumber !== undefined) await this.room.say(`[${name}] 今天已经打过卡了，将覆盖上次打卡。`)
+        else await this.room.say(`[${name}] 今天已经打过卡了，继续操作将覆盖上次打卡。`)
+        previous[previous.length - 1].time = info.time
+        info = previous[previous.length - 1]
       }
 
-      await this.room.say(`${recommendResponse} 请输入备注，无备注请回复 n 。`)
-      reply = await waitMsg()
-      let commentResponse = '无备注。'
-      if (reply.text().trim() !== 'n') {
-        info.comment = reply.text()
-        commentResponse = '备注已记录。'
+      const save = async () => {
+        if (!hasPrevious)
+          this.data.infos.push(info)
+        await this.saveData()
+        await this.room.say(`[${name}] 打卡内容已记录。 您已连续打卡 ${this.getConsecutivePunchNum(info.id)} 天，感谢使用^_^`)
       }
-      await this.room.say(commentResponse)
 
-      await save()
+      if (directNumber !== undefined) {
+        info.num = directNumber
+        await save()
+        this.inProcess.delete(contact.id)
+        return
+      }
+
+      await this.room.say(`[${name}] 开始打卡。 回复“数字 .”或“数字 。”只记录做题个数，回复取消中止打卡。 请输入今天做题个数：`)
+      try {
+        while (true) {
+          const reply = await waitMsg()
+          const text = reply.text()
+          const exerciseNumber = parseInt(text)
+          if (isNaN(exerciseNumber) || exerciseNumber <= 0) {
+            await this.room.say(`输入数字无效。 请输入正整数：`)
+          } else {
+            info.num = exerciseNumber
+            if (text[text.length - 1] === '.' || text[text.length - 1] === '。') {
+              await save()
+              this.inProcess.delete(contact.id)
+              return
+            }
+            break
+          }
+        }
+
+        await this.room.say(`请输入推荐好题，无推荐请回复 n 。`)
+        let reply = await waitMsg()
+        let recommendResponse = '无推荐。'
+        if (reply.text().trim() !== 'n') {
+          info.recommend = reply.text()
+          recommendResponse = '推荐题目已记录。'
+        }
+
+        await this.room.say(`${recommendResponse} 请输入备注，无备注请回复 n 。`)
+        reply = await waitMsg()
+        let commentResponse = '无备注。'
+        if (reply.text().trim() !== 'n') {
+          info.comment = reply.text()
+          commentResponse = '备注已记录。'
+        }
+        await this.room.say(commentResponse)
+
+        await save()
+      } catch (err) {
+        await this.room.say(`[${name}] 打卡取消。`)
+      }
+      this.inProcess.delete(contact.id)
     } catch (err) {
-      await this.room.say(`[${name}] 打卡取消。`)
+      console.log(`error: ${String(err)}`)
+      this.inProcess.delete(contact.id)
+      await this.room.say(`出现错误： ${String(err)}。 打卡结束。 打卡完成之后的错误是无关紧要的。`)
     }
-    this.inProcess.delete(contact.id)
   }
 
   async punchContest(contact: Contact, date: Date) {
@@ -202,7 +208,7 @@ class ExercisePuncher {
     info.name = name
     info.id = contact.id
 
-    if (!this.data.contests) this.data.contests = []    
+    if (!this.data.contests) this.data.contests = []
 
     await this.room.say(`[${name}] 开始记录周赛。 请输入 AC 个数：`)
     try {
