@@ -31,10 +31,6 @@ class ContestPunchInfo {
   comment: string = ''
 }
 
-function isSameDay(a: moment.Moment, b: moment.Moment): boolean {
-  return a.year() === b.year() && a.month() === b.month() && a.day() === b.day()
-}
-
 class ExercisePuncher {
   bot: Wechaty
   config: ExercisePuncherConfig
@@ -117,7 +113,7 @@ class ExercisePuncher {
       info.id = contact.id
 
       const previous = this.data.infos.filter((info) => info.id == contact.id)
-      const hasPrevious = previous.length > 0 && isSameDay(previous[previous.length - 1].time, info.time)
+      const hasPrevious = previous.length > 0 && previous[previous.length - 1].time.isSame(info.time, 'day')
       if (hasPrevious) {
         if (directNumber !== undefined) await this.room.say(`[${name}] 今天已经打过卡了，将覆盖上次打卡。`)
         else await this.room.say(`[${name}] 今天已经打过卡了，继续操作将覆盖上次打卡。`)
@@ -296,7 +292,7 @@ class ExercisePuncher {
     if (punches.length === 0) return 0;
     let count = 0
     let idx = 0
-    if (isSameDay(punches[0].time, moment())) {
+    if (moment().isSame(punches[0].time, 'day')) {
       count = 1
       idx = 1
     }
@@ -304,7 +300,7 @@ class ExercisePuncher {
     while (true) {
       if (idx >= punches.length) break
       last.subtract(1, 'day')
-      if (isSameDay(punches[idx].time, last)) {
+      if (last.isSame(punches[idx].time, 'day')) {
         count++
         idx++
       } else {
@@ -316,7 +312,7 @@ class ExercisePuncher {
 
   async dailyReport() {
     let now = moment()
-    let todays = this.data.infos.filter((info) => isSameDay(info.time, now))
+    let todays = this.data.infos.filter((info) => now.isSame(info.time, 'day'))
     let peopleCount = 0
     let problemCount = 0
     let recommends = []
