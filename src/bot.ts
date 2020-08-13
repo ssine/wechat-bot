@@ -1,10 +1,10 @@
 import { Wechaty } from 'wechaty'
 import { PuppetPadplus } from 'wechaty-puppet-padplus'
 import { QRCodeTerminal, MessageAwaiter } from 'wechaty-plugin-contrib'
-import config from './config'
+import { token } from './config'
 
 export async function getBotInstance(): Promise<Wechaty> {
-  const puppet = new PuppetPadplus({ token: config.token })
+  const puppet = new PuppetPadplus({ token: token })
 
   const bot = new Wechaty({
     puppet: puppet,
