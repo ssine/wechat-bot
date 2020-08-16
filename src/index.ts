@@ -22,9 +22,19 @@ import { Wechaty, Message } from 'wechaty'
 
   let me = await bot.Contact.find({alias: 'master'})
 
+  if (!me) {
+    console.log('failed to get master.')
+  } else {
+    me.say('启动成功。')
+  }
+
   new CronJob('0 30 23 * * *', () => {
     console.log('it\'s ' + new Date().toLocaleTimeString() + ' now, asking for life calendar update.');
     sequenced_get_calender(bot, me);
+  }, null, true, 'Asia/Shanghai');
+
+  new CronJob('0 0 0 * * *', () => {
+    me.say('一亩三分地签到')
   }, null, true, 'Asia/Shanghai');
 
   let cmd_table: [RegExp, (msg: Message) => void][] = [];
