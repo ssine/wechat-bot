@@ -35,7 +35,6 @@ async function get_life_calendar(bot: Wechaty, me: Contact, date_str: string) {
   await put_file(file_name, event_file);
 
   me.say(`事件\n${calendar_items.join('\n')}\n保存成功`);
-  // me.say(823188494, '你的男朋友 lsy 记录了\n' + calendar_items.join('\n') + '\n，打分 ' + score + ' 。');
   calendar_items = [];
   console.log('done');
 }
