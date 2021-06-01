@@ -17,9 +17,11 @@
     "moment": "^2.27.0",
     "ts-node": "^8.10.2",
     "typescript": "^3.9.5",
-    "wechaty": "^0.56.6",
+    "wechaty": "^0.60.10",
     "wechaty-plugin-contrib": "^0.11.4",
-    "wechaty-puppet-padlocal": "^0.2.33"
+    "wechaty-puppet": "^0.35.1",
+    "wechaty-puppet-padlocal": "^0.3.0",
+    "wechaty-puppet-wechat": "^0.28.1"
   },
   "devDependencies": {}
 }

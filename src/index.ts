@@ -1,7 +1,7 @@
 import { getBotInstance } from './bot'
 import ExercisePuncher from './exercise-puncher'
 import MessageSyncer from './syncer'
-import { message_sync, message_sync_test, puncher as pc,  } from './config'
+import { message_sync, message_sync_2, message_sync_test, puncher as pc,  } from './config'
 import {
   sequenced_get_calender,
   get_calendar_items,
@@ -26,6 +26,9 @@ import { Wechaty, Message } from 'wechaty'
 
   const syncer2 = new MessageSyncer(bot, message_sync_test)
   await syncer2.init()
+
+  const syncer3 = new MessageSyncer(bot, message_sync_2)
+  await syncer3.init()
 
   let me = await bot.Contact.find({alias: 'master'})
 

@@ -1,4 +1,4 @@
-import { Wechaty, Room } from 'wechaty'
+import { Wechaty, Room, Message } from 'wechaty'
 import {
   MessageType,
 } from 'wechaty-puppet'
@@ -45,7 +45,11 @@ class MessageSyncer {
       })
     }
 
-    this.bot.on('message', async (msg) => {
+    this.bot.on('message', async (msg: Message) => {
+      if (msg.self() || msg.age() > 3 * 60) {
+        return
+      }
+
       try {
 
         const fromRoomId = msg.room()?.id;
@@ -65,8 +69,10 @@ class MessageSyncer {
             if (msg.type() === MessageType.Text && from) {
               const dispName = (await msg.room().alias(from)) || from.name() || from.id;
               targetRoom.room.say(`[${dispName}@${fromName}] ${msg.text()}`)
-            } else {
-              targetRoom.room.say(msg)
+            } else if (msg.type() === MessageType.Url) {
+              targetRoom.room.say(await msg.toUrlLink())
+            } else if ([MessageType.Image, MessageType.Emoticon].includes(msg.type())) {
+              msg.forward(targetRoom.room)
             }
           }
         }
