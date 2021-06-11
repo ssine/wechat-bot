@@ -1,4 +1,4 @@
-import { Wechaty, Room, Message } from 'wechaty'
+import { Wechaty, Room, Message, Contact } from 'wechaty'
 import {
   MessageType, RoomQueryFilter,
 } from 'wechaty-puppet'
@@ -41,7 +41,7 @@ class Repeater {
 
       const state = this.msgs[msg.room()?.id]
       const text = msg.text()
-      if (!state || !text || state.neg.has(text)) {
+      if (!state || !text || text.length > 100 || state.neg.has(text)) {
         return
       }
 
