@@ -1,7 +1,7 @@
 import { getBotInstance } from './bot'
 import ExercisePuncher from './exercise-puncher'
 import MessageSyncer from './syncer'
-import { message_sync, message_sync_2, message_sync_test, puncher as pc,  } from './config'
+import { message_sync, message_sync_2, message_sync_test, puncher as pc, repeaterRooms,  } from './config'
 import {
   sequenced_get_calender,
   get_calendar_items,
@@ -12,6 +12,7 @@ import {
 import { CronJob } from 'cron'
 import { Wechaty, Message } from 'wechaty'
 import { FontGen } from './fontgen/fontgen'
+import Repeater from './repeater'
 
 (async () => {
   const bot = await getBotInstance()
@@ -33,6 +34,9 @@ import { FontGen } from './fontgen/fontgen'
 
   const fg = new FontGen(bot)
   await fg.init()
+
+  const rp = new Repeater(bot, repeaterRooms)
+  await rp.init()
 
   let me = await bot.Contact.find({alias: 'master'})
 
