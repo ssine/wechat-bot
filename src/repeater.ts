@@ -39,7 +39,7 @@ class Repeater {
         return
       }
 
-      const state = this.msgs[msg.room().id]
+      const state = this.msgs[msg.room()?.id]
       const text = msg.text()
       if (!state || !text || state.neg.has(text)) {
         return
