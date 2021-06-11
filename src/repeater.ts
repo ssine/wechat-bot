@@ -45,6 +45,10 @@ class Repeater {
         return
       }
 
+      if (text === '[便便]') {
+        msg.say('[炸弹]')
+      }
+
       if (state.pos.has(text)) {
         msg.say(text)
         state.neg.add(text)
