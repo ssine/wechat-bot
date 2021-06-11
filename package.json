@@ -13,7 +13,10 @@
     "@types/ali-oss": "^6.0.5",
     "@types/cron": "^1.7.2",
     "ali-oss": "^6.10.0",
+    "canvas": "^2.8.0",
     "cron": "^1.8.2",
+    "file-box": "^0.16.8",
+    "gifencoder": "^2.0.1",
     "moment": "^2.27.0",
     "ts-node": "^8.10.2",
     "typescript": "^3.9.5",
@@ -23,5 +26,7 @@
     "wechaty-puppet-padlocal": "^0.3.0",
     "wechaty-puppet-wechat": "^0.28.1"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "@types/gifencoder": "^2.0.1"
+  }
 }

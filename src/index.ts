@@ -11,6 +11,7 @@ import {
 } from './calendar'
 import { CronJob } from 'cron'
 import { Wechaty, Message } from 'wechaty'
+import { FontGen } from './fontgen/fontgen'
 
 (async () => {
   const bot = await getBotInstance()
@@ -29,6 +30,9 @@ import { Wechaty, Message } from 'wechaty'
 
   const syncer3 = new MessageSyncer(bot, message_sync_2)
   await syncer3.init()
+
+  const fg = new FontGen(bot)
+  await fg.init()
 
   let me = await bot.Contact.find({alias: 'master'})
 
