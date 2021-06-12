@@ -73,7 +73,7 @@ class Coin {
 
       if (text.includes('我的')) {
         const target = msg.talker()
-        msg.say(`${await getDispName(target, msg.room())} 余额： ${(await this.getAccount(target.id)).balance} B`)
+        msg.say(`${await getDispName(target, msg.room())} 余额： ${+((await this.getAccount(target.id)).balance.toFixed(2))} B`)
         return
       }
 
@@ -89,7 +89,7 @@ class Coin {
 
         let resp = '7U币 富豪榜'
         for (let act of accounts) {
-          resp = resp + `\n${await getDispName(act.contact, room)}: ${act.account.balance}`
+          resp = resp + `\n${await getDispName(act.contact, room)}: ${+(act.account.balance.toFixed(2))}`
         }
         msg.say(resp)
         return
@@ -104,42 +104,44 @@ class Coin {
         }
         this.inGame = true
         const state: CmpState[] = []
-        msg.say('输入「来」付出 5B 进行挑战，请开始输入：')
-        // 输入「押 编号 [5~100]B」押注某个玩家，
+        msg.say('输入「来 x」付出 xB 进行挑战，默认5。请开始输入：')
+        // 输入「押 编号 [5~100]B」押注某个玩家。
 
         const addPlayer = async (m: Message) => {
-          if (await m.mentionSelf() && m.room()?.id === room.id && m.text().includes('来')) {
+          if (m.room()?.id === room.id && m.text().includes('来')) {
             const act = await this.getAccount(m.talker().id)
             if (state.map(s => s.contact.id).includes(m.talker().id)) {
               m.say(`${await getDispName(m.talker(), room)} 无效，您已加入`)
               return
             }
-            if (act.balance < 5) {
-              m.say(`${await getDispName(m.talker(), room)} 余额不足 5B ，无法加入`)
+            const amount = parseInt(/\d+/.exec(m.text())[0]) || 5
+            if (act.balance < amount) {
+              m.say(`${await getDispName(m.talker(), room)} 余额不足 ${amount}B ，无法加入`)
               return
             }
-            act.balance -= 5
+            act.balance -= amount
             state.push({
               contact: m.talker(),
-              mortage: 5,
+              mortage: amount,
               alive: true,
               bets: []
             })
             const idx = state.length
-            await m.say(`${idx}. ${await getDispName(m.talker(), room)} 成功加入，自动押 5B`)
+            await m.say(`${idx}. ${await getDispName(m.talker(), room)} 成功加入，押 ${amount}B`)
           }
         }
         this.bot.on('message', addPlayer)
 
-        await sleep(15000)
+        await sleep(20000)
         
-        if (state.length === 0) {
+        const total = state.length
+        if (total === 0) {
           room.say('20秒无玩家加入，游戏结束。')
-          this.bot.off('message', addPlayer)
         }
+        this.bot.off('message', addPlayer)
+        const numWinner = Math.ceil(total / 3)
 
         while (true) {
-          await sleep(5000)
           let resp = ''
           let hasBig = false
           for (let idx = 0; idx < state.length; idx++) {
@@ -163,12 +165,15 @@ class Coin {
           if (alives.length === 0) {
             break
           }
-          if (alives.length === 1) {
+          if (alives.length <= numWinner) {
             const gain = state.map(s => s.mortage).reduce((a, b) => a + b, 0);
-            (await this.getAccount(alives[0].s.contact.id)).balance += gain
-            resp += `赢家 ${alives[0].idx+1}.${await getDispName(alives[0].s.contact, room)}\n`
+            const totoalMortage = alives.map(s => s.s.mortage).reduce((a, b) => a + b, 0);
             resp += '收益列表:\n'
-            resp += `${await getDispName(alives[0].s.contact, room)} ${gain} B\n`
+            for (let a of alives) {
+              const benefit = gain / totoalMortage * a.s.mortage;
+              (await this.getAccount(a.s.contact.id)).balance += benefit
+              resp += `${a.idx+1}.${await getDispName(a.s.contact, room)} ${+(benefit.toFixed(2))} B\n`
+            }
             resp += '游戏结束，欢迎下次来玩'
             msg.say(resp)
             break
@@ -180,9 +185,9 @@ class Coin {
           }
           resp += '\n游戏继续...'
           msg.say(resp)
+          await sleep(5000)
         }
         
-        this.bot.off('message', addPlayer)
         await this.saveData()
         this.inGame = false
       }
