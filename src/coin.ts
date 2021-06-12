@@ -54,6 +54,7 @@ class Coin {
         if (!res) return
         const amount = parseInt(res[0])
         const targets = await msg.mentionList()
+        if (text.includes('庄家')) targets.push(msg.talker())
         for (let target of targets) {
           (await this.getAccount(target.id)).balance += amount
         }
@@ -133,11 +134,12 @@ class Coin {
         await sleep(15000)
         
         if (state.length === 0) {
-          room.say('15秒无玩家加入，游戏结束。')
+          room.say('20秒无玩家加入，游戏结束。')
           this.bot.off('message', addPlayer)
         }
 
         while (true) {
+          await sleep(5000)
           let resp = ''
           let hasBig = false
           for (let idx = 0; idx < state.length; idx++) {
@@ -174,11 +176,10 @@ class Coin {
 
           resp += '幸存者：'
           for (let a of alives) {
-            resp += `${a.idx+1}.${await getDispName(alives[0].s.contact, room)} `
+            resp += `${a.idx+1}.${await getDispName(a.s.contact, room)} `
           }
           resp += '\n游戏继续...'
           msg.say(resp)
-          await sleep(1000)
         }
         
         this.bot.off('message', addPlayer)
