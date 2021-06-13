@@ -77,6 +77,26 @@ class Coin {
         return
       }
 
+      if (text.includes('转账')) {
+        const targets = (await msg.mentionList()).filter(acc => acc.id !== this.bot.userSelf().id)
+        const amount = parseInt(/\d+/.exec(text)?.[0])
+        if (!amount) return
+        const total = amount * targets.length
+        const sender = await this.getAccount(msg.talker().id)
+        if (sender.balance < total) {
+          msg.say(`${await getDispName(msg.talker(), msg.room())} 余额 ${sender.balance} 不足 ${total} B`)
+          return
+        }
+        sender.balance -= total
+        for (let t of targets) {
+          (await this.getAccount(t.id)).balance += amount
+        }
+        await this.saveData()
+        const dispNames = await Promise.all(targets.map(t => getDispName(t, msg.room())))
+        msg.say(`${await getDispName(msg.talker(), msg.room())} 向 ${dispNames.join('&')} ${targets.length > 1 && '各'}转账 ${amount} B`)
+        return
+      }
+
       if (text.includes('富豪榜')) {
         const room = msg.room()
         if (!room) return
@@ -96,6 +116,7 @@ class Coin {
       }
 
       if (text.includes('比大小')) {
+        const isInc = text.includes('2')
         const room = msg.room()
         if (!room) return
         if (this.inGame) {
@@ -114,7 +135,11 @@ class Coin {
               m.say(`${await getDispName(m.talker(), room)} 无效，您已加入`)
               return
             }
-            const amount = parseInt(/\d+/.exec(m.text())[0]) || 5
+            const amount = parseInt(/\d+/.exec(m.text())?.[0]) || 5
+            if (isInc && state.length > 0 && amount < state[state.length - 1].mortage) {
+              m.say(`${await getDispName(m.talker(), room)} 押注小于上家 ${state[state.length - 1].mortage}B ，无法加入`)
+              return
+            }
             if (act.balance < amount) {
               m.say(`${await getDispName(m.talker(), room)} 余额不足 ${amount}B ，无法加入`)
               return
