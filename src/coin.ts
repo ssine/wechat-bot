@@ -25,6 +25,17 @@ type CmpState = {
   }[]
 }
 
+type RRState = {
+  contact: Contact
+  mortage: number
+  alive: boolean
+  point?: number
+  bets: {
+    contact: Contact
+    mortage: number
+  }[]
+}
+
 class Coin {
   bot: Wechaty
   config: CoinConfig
@@ -79,7 +90,7 @@ class Coin {
 
       if (text.includes('转账')) {
         const targets = (await msg.mentionList()).filter(acc => acc.id !== this.bot.userSelf().id)
-        const amount = parseInt(/\d+/.exec(text)?.[0])
+        const amount = parseFloat(/\d+(.\d+)?/.exec(text)?.[0])
         if (!amount) return
         const total = amount * targets.length
         const sender = await this.getAccount(msg.talker().id)
@@ -135,7 +146,11 @@ class Coin {
               m.say(`${await getDispName(m.talker(), room)} 无效，您已加入`)
               return
             }
-            const amount = parseInt(/\d+/.exec(m.text())?.[0]) || 5
+            const amount = parseFloat(/\d+(.\d+)?/.exec(m.text())?.[0]) || 5
+            if (amount < 1) {
+              m.say(`${await getDispName(m.talker(), room)} 无效，最少押注1B`)
+              return
+            }
             if (isInc && state.length > 0 && amount < state[state.length - 1].mortage) {
               m.say(`${await getDispName(m.talker(), room)} 押注小于上家 ${state[state.length - 1].mortage}B ，无法加入`)
               return
@@ -217,6 +232,139 @@ class Coin {
         this.inGame = false
       }
 
+      if (text.includes('轮盘')) {
+        const isInc = text.includes('2')
+        const room = msg.room()
+        if (!room) return
+        if (this.inGame) {
+          msg.say('已在游戏中！')
+          return
+        }
+        this.inGame = true
+        const state: RRState[] = []
+        msg.say('游戏开局，子弹 A~F 共 6 发，有 3 颗实弹，参与者轮流挨枪子儿。 输入「来 x」付出 xB 进行挑战，默认5。请开始输入：')
+        // 输入「押 编号 [5~100]B」押注某个玩家。
+
+        const addPlayer = async (m: Message) => {
+          if (m.room()?.id === room.id && m.text().includes('来')) {
+            const act = await this.getAccount(m.talker().id)
+            if (state.map(s => s.contact.id).includes(m.talker().id)) {
+              m.say(`${await getDispName(m.talker(), room)} 无效，您已加入`)
+              return
+            }
+            const amount = parseFloat(/\d+(.\d+)?/.exec(m.text())?.[0]) || 5
+            if (amount < 1) {
+              m.say(`${await getDispName(m.talker(), room)} 无效，最少押注1B`)
+              return
+            }
+            if (isInc && state.length > 0 && amount < state[state.length - 1].mortage) {
+              m.say(`${await getDispName(m.talker(), room)} 押注小于上家 ${state[state.length - 1].mortage}B ，无法加入`)
+              return
+            }
+            if (act.balance < amount) {
+              m.say(`${await getDispName(m.talker(), room)} 余额不足 ${amount}B ，无法加入`)
+              return
+            }
+            act.balance -= amount
+            state.push({
+              contact: m.talker(),
+              mortage: amount,
+              alive: true,
+              bets: []
+            })
+            const idx = state.length
+            await m.say(`${idx}. ${await getDispName(m.talker(), room)} 成功加入，押 ${amount}B`)
+          }
+        }
+        this.bot.on('message', addPlayer)
+
+        await sleep(20000)
+        
+        const total = state.length
+        if (total === 0) {
+          room.say('20秒无玩家加入，游戏结束。')
+        }
+        this.bot.off('message', addPlayer)
+        const numWinner = Math.ceil(total / 4)
+
+        let playerIdx = -1
+        const getNextPlayer = () => {
+          let localIdx = playerIdx
+          while (true) {
+            localIdx ++
+            if (localIdx >= state.length)
+              localIdx = 0
+            if (state[localIdx].alive)
+              return {
+                idx: localIdx,
+                player: state[localIdx]
+              }
+          }
+        }
+
+        msg.say(`\n${1}.${await getDispName(state[0].contact, room)} 😅🔫 子弹A\n`)
+
+        let bullets = shuffle([true, true, true, false, false, false])
+        let bulletIdx = 0
+        while (true) {
+          await sleep(5000)
+          let resp = ''
+          let alives:{
+            idx: number;
+            s: RRState;
+          }[] = []
+
+          const {idx, player} = getNextPlayer()
+          playerIdx = idx
+
+          resp += `${idx+1}.${await getDispName(player.contact, room)} `
+          if (bullets[bulletIdx]) {
+            resp += `🤪🔫 子弹${String.fromCharCode('A'.charCodeAt(0) + bulletIdx)}\n`
+            player.alive = false
+          } else {
+            resp += `😎🔫 子弹${String.fromCharCode('A'.charCodeAt(0) + bulletIdx)}\n`
+          }
+
+          alives = state.map((s, idx) => ({idx: idx, s: s})).filter(s => s.s.alive)
+          if (alives.length === 0) break
+          resp += '幸存者：'
+          for (let a of alives) {
+            resp += `${a.idx+1}.${await getDispName(a.s.contact, room)} `
+          }
+
+          if (alives.length <= numWinner) {
+            const gain = state.map(s => s.mortage).reduce((a, b) => a + b, 0);
+            const totoalMortage = alives.map(s => s.s.mortage).reduce((a, b) => a + b, 0);
+            resp += '收益列表:\n'
+            for (let a of alives) {
+              const benefit = gain / totoalMortage * a.s.mortage;
+              (await this.getAccount(a.s.contact.id)).balance += benefit
+              resp += `${a.idx+1}.${await getDispName(a.s.contact, room)} ${+(benefit.toFixed(2))} B\n`
+            }
+            resp += '游戏结束，欢迎下次来玩'
+            msg.say(resp)
+            break
+          } else {
+            bulletIdx += 1
+            if (bulletIdx >= 6) {
+              bullets = shuffle([true, true, true, false, false, false])
+              bulletIdx = 0
+              resp += '\n重新装弹。'
+            }
+  
+            resp += '\n游戏继续...'
+  
+            const {idx: nextIdx, player: nextPlayer} = getNextPlayer()
+            resp += `\n下一位：\n${nextIdx+1}.${await getDispName(nextPlayer.contact, room)} 😅🔫 子弹${String.fromCharCode('A'.charCodeAt(0) + bulletIdx)}\n`  
+          }
+
+          msg.say(resp)
+        }
+        
+        await this.saveData()
+        this.inGame = false
+      }
+
     })
   }
 
@@ -260,6 +408,24 @@ const filterAsync = (array: any[], filter: any) =>
   Promise.all(array.map(entry => filter(entry)))
   .then(bits => array.filter(entry => bits.shift()));
 
+function shuffle(array: any[]) {
+  var currentIndex = array.length,  randomIndex;
+
+  // While there remain elements to shuffle...
+  while (0 !== currentIndex) {
+
+    // Pick a remaining element...
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+
+    // And swap it with the current element.
+    [array[currentIndex], array[randomIndex]] = [
+      array[randomIndex], array[currentIndex]];
+  }
+
+  return array;
+}
+  
 const backUp = () => {
   // let lastAdd = Date.now() / 1000
   // const addPlayer = async (m: Message) => {
