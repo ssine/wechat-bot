@@ -61,9 +61,9 @@ class Coin {
 
       const text = msg.text()
       if (text.includes('充值') && msg.talker().id === this.config.adminId) {
-        const res = /\d+/.exec(text)
+        const res = /.*充值(-?\d+(\.\d+)?)/.exec(text)
         if (!res) return
-        const amount = parseInt(res[0])
+        const amount = parseInt(res[1])
         const targets = await msg.mentionList()
         if (text.includes('庄家')) targets.push(msg.talker())
         for (let target of targets) {
@@ -173,12 +173,14 @@ class Coin {
         this.bot.on('message', addPlayer)
 
         await sleep(20000)
+        this.bot.off('message', addPlayer)
         
         const total = state.length
         if (total === 0) {
           room.say('20秒无玩家加入，游戏结束。')
+          this.inGame = false
+          return
         }
-        this.bot.off('message', addPlayer)
         const numWinner = Math.ceil(total / 3)
 
         while (true) {
@@ -230,6 +232,7 @@ class Coin {
         
         await this.saveData()
         this.inGame = false
+        return
       }
 
       if (text.includes('轮盘')) {
@@ -279,12 +282,14 @@ class Coin {
         this.bot.on('message', addPlayer)
 
         await sleep(20000)
+        this.bot.off('message', addPlayer)
         
         const total = state.length
         if (total === 0) {
           room.say('20秒无玩家加入，游戏结束。')
+          this.inGame = false
+          return
         }
-        this.bot.off('message', addPlayer)
         const numWinner = Math.ceil(total / 4)
 
         let playerIdx = -1
@@ -363,6 +368,7 @@ class Coin {
         
         await this.saveData()
         this.inGame = false
+        return
       }
 
     })
