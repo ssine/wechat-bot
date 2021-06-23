@@ -5,14 +5,10 @@ import {
   MessageType, RoomQueryFilter,
 } from 'wechaty-puppet'
 
-type Account = {
-  balance: number
-}
-
-type CoinConfig = {
-  storage: string
-  adminId: string
-}
+import {
+	Account, CoinConfig, getDispName,
+	sleep, filterAsync, shuffle
+} from './account_utils'
 
 type CmpState = {
   contact: Contact
@@ -114,7 +110,7 @@ class Coin {
         const members = await room.memberAll()
 
         const accounts = members.filter((mem) => this.accounts[mem.id]).map(mem => ({
-          contact: mem, 
+          contact: mem,
           account: this.accounts[mem.id]
         })).sort((a, b) => b.account.balance - a.account.balance)
 
@@ -174,7 +170,7 @@ class Coin {
 
         await sleep(20000)
         this.bot.off('message', addPlayer)
-        
+
         const total = state.length
         if (total === 0) {
           room.say('20秒无玩家加入，游戏结束。')
@@ -229,7 +225,7 @@ class Coin {
           msg.say(resp)
           await sleep(5000)
         }
-        
+
         await this.saveData()
         this.inGame = false
         return
@@ -283,7 +279,7 @@ class Coin {
 
         await sleep(20000)
         this.bot.off('message', addPlayer)
-        
+
         const total = state.length
         if (total === 0) {
           room.say('20秒无玩家加入，游戏结束。')
@@ -356,16 +352,16 @@ class Coin {
               bulletIdx = 0
               resp += '\n重新装弹。'
             }
-  
+
             resp += '\n游戏继续...'
-  
+
             const {idx: nextIdx, player: nextPlayer} = getNextPlayer()
-            resp += `\n下一位：\n${nextIdx+1}.${await getDispName(nextPlayer.contact, room)} 😅🔫 子弹${String.fromCharCode('A'.charCodeAt(0) + bulletIdx)}\n`  
+            resp += `\n下一位：\n${nextIdx+1}.${await getDispName(nextPlayer.contact, room)} 😅🔫 子弹${String.fromCharCode('A'.charCodeAt(0) + bulletIdx)}\n`
           }
 
           msg.say(resp)
         }
-        
+
         await this.saveData()
         this.inGame = false
         return
@@ -398,40 +394,7 @@ class Coin {
 
 }
 
-const getDispName = async (contact: Contact, room?: Room) => {
-  return (await room?.alias(contact)) || contact.name() || contact.id
-}
 
-const sleep = async (ms: number) => {
-  return new Promise((res, rej) => {
-    setTimeout(() => {
-      res(null)
-    }, ms);
-  })
-}
-
-const filterAsync = (array: any[], filter: any) =>
-  Promise.all(array.map(entry => filter(entry)))
-  .then(bits => array.filter(entry => bits.shift()));
-
-function shuffle(array: any[]) {
-  var currentIndex = array.length,  randomIndex;
-
-  // While there remain elements to shuffle...
-  while (0 !== currentIndex) {
-
-    // Pick a remaining element...
-    randomIndex = Math.floor(Math.random() * currentIndex);
-    currentIndex--;
-
-    // And swap it with the current element.
-    [array[currentIndex], array[randomIndex]] = [
-      array[randomIndex], array[currentIndex]];
-  }
-
-  return array;
-}
-  
 const backUp = () => {
   // let lastAdd = Date.now() / 1000
   // const addPlayer = async (m: Message) => {
