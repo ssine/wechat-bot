@@ -4,6 +4,7 @@ import {
   FriendshipType,
   MessageType, RoomQueryFilter,
 } from 'wechaty-puppet'
+import {TCPGame} from './three_card_poker'
 
 import {
 	Account, CoinConfig, getDispName,
@@ -38,6 +39,7 @@ class Coin {
   accounts: Record<string, Account>
   writeQueue: Promise<unknown>[]
   inGame: boolean
+	TcpGame: TCPGame
 
   constructor(bot: Wechaty, config: CoinConfig) {
     this.bot = bot
@@ -45,6 +47,7 @@ class Coin {
     this.accounts = {}
     this.writeQueue = []
     this.inGame = false
+		this.TcpGame = new TCPGame(this.bot);
   }
 
   async init() {
@@ -71,7 +74,7 @@ class Coin {
         return
       }
 
-      if (!await msg.mentionSelf()) return
+			if (!await msg.mentionSelf()) return
 
       if (text.includes('7u币') || text.includes('7U币')) {
         msg.say('输入“我的”查看余额\n输入“富豪榜”查看排行榜\n输入“比大小”开始比大小游戏')
@@ -122,6 +125,20 @@ class Coin {
         return
       }
 
+			if (text.includes('TCP') || text.includes('tcp')){
+        const room = msg.room()
+        if (!room) return
+        if (this.inGame) {
+          msg.say('已在游戏中！')
+          return
+        }
+				this.inGame = true;
+				await this.TcpGame.run(msg,this.accounts);
+        await this.saveData()
+        this.inGame = false
+        return
+
+			}
       if (text.includes('比大小')) {
         const isInc = text.includes('2')
         const room = msg.room()

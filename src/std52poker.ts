@@ -1,3 +1,4 @@
+
 class Card{
 	suit : number
 	value: number
@@ -14,24 +15,26 @@ class Card{
 	}
 }
 
-class Poker{
-	cards : Card[]
+class Poker<C extends Card>{
+	CardType : new(a:number, b:number) => C
+	cards : C[]
 	suit_size: number
 	value_size: number
 	cards_num: number
 	next : number
 	debug_line_size: number
 
-	constructor(suit_size: number, value_size: number, debug_line_size : number = 7){
+	constructor(cardtype: new (a:number, b:number) => C , suit_size: number, value_size: number, debug_line_size : number = 7){
 		this.cards = [];
 		this.suit_size = suit_size;
 		this.value_size = value_size;
 		this.cards_num = suit_size * value_size;
 		this.next = 0;
 		this.debug_line_size = debug_line_size;
+		this.CardType = cardtype;
 		for (let i: number = 0; i < suit_size; ++i){
 			for (let j: number = 0; j < value_size; ++j){
-				this.cards.push(new Card(i, j));
+				this.cards.push(new this.CardType(i, j));
 			}
 		}
 		this.shuffle();
@@ -90,15 +93,24 @@ class Poker{
 		}
 }
 
-class Std52Poker extends Poker{
+
+class Std52Card extends Card{
+	static readonly Suit : string[] = ["♠", "♥", "♦", "♣"];
+	static readonly Value : string[] = [ "2", "3", "4", "5", "6", "7", "8",
+																			 "9", "10", "J", "Q", "K", "A"];
+	get_string(){
+		return Std52Card.Suit[this.suit]+Std52Card.Value[this.value];
+	}
+}
+
+class Std52Poker extends Poker<Std52Card>{
 	constructor(){
-		super(4,13);
+		super(Std52Card,4,13);
 	}
 }
 
 
 export {
-	Card,
-	Poker,
+	Std52Card,
 	Std52Poker
 }

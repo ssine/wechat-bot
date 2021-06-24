@@ -2,6 +2,7 @@ import { getBotInstance } from './bot'
 import ExercisePuncher from './exercise-puncher'
 import MessageSyncer from './syncer'
 import { message_sync, message_sync_2, message_sync_test, puncher as pc, repeaterRooms, coinConfig  } from './config'
+//import { coinConfig  } from './config'
 import {
   sequenced_get_calender,
   get_calendar_items,
