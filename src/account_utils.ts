@@ -43,10 +43,10 @@ function shuffle(array: any[]) {
 }
 
 export {
-	Account,
-	CoinConfig,
-	getDispName,
-	sleep,
-	filterAsync,
-	shuffle
+  Account,
+  CoinConfig,
+  getDispName,
+  sleep,
+  filterAsync,
+  shuffle
 }

@@ -6,7 +6,7 @@ import { token } from './config'
 import { MessageType } from 'wechaty-puppet'
 
 export async function getBotInstance(): Promise<Wechaty> {
-  const puppet = new PuppetPadlocal({ token: '' })
+  const puppet = new PuppetPadlocal({ token: token })
   // const puppet = new PuppetWeChat()
 
   const bot = new Wechaty({

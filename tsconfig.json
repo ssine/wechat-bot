@@ -6,7 +6,7 @@
     "outDir": "./dist",
     "sourceMap": true,
     "esModuleInterop": true,
-		"downlevelIteration": true
+    "downlevelIteration": true
   },
   "include": [
     "src/**/*"
