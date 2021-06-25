@@ -77,7 +77,13 @@ class Coin {
       if (!await msg.mentionSelf()) return
 
       if (text.includes('7u币') || text.includes('7U币')) {
-        msg.say('输入“我的”查看余额\n输入“富豪榜”查看排行榜\n输入“比大小”开始比大小游戏')
+        msg.say(`输入“我的”查看余额
+输入“富豪榜”查看排行榜
+输入“比大小”开始比大小游戏
+输入“比大小2”在非递减押注模式下进行
+输入“轮盘”开始轮盘游戏
+输入“轮盘2”在非递减押注模式下进行
+输入“TCP”开始Three Card Poker游戏`)
         return
       }
 
@@ -137,8 +143,8 @@ class Coin {
         await this.saveData()
         this.inGame = false
         return
-
       }
+
       if (text.includes('比大小')) {
         const isInc = text.includes('2')
         const room = msg.room()
