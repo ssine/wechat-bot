@@ -3,3 +3,5 @@
 /data/
 /src/config.ts
 /src/test.ts
+/dist/
+*.swp

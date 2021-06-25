@@ -5,7 +5,8 @@
     "noImplicitAny": true,
     "outDir": "./dist",
     "sourceMap": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+		"downlevelIteration": true
   },
   "include": [
     "src/**/*"
