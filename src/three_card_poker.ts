@@ -302,7 +302,7 @@ Unqualified 仅1:1 赔付 ante'
         }
         else if (res < 0) // dealer win
         {
-          resp += "Loss, 收益: 0\n";
+          resp += "Lose, 收益: 0\n";
         }
         else {
           let reward : number = 0;
