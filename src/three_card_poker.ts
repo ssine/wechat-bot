@@ -261,7 +261,7 @@ Unqualified 仅1:1 赔付 ante'
         resp += c.get_string()+" "
       }
       resp += Hand_Rank_Name[s.rank];
-      if(s.play){
+      if(s.play == 1){
         resp +=" [play]"
       } else{
         resp +=" [quit]"
@@ -292,7 +292,7 @@ Unqualified 仅1:1 赔付 ante'
     resp += "\n结算\n\n";
 
     for (let [key, s] of state) {
-      if(s.play){
+      if(s.play == 1){
         resp += s.username + ": ";
         let res = TCPRank.compare(s.hand, dealer_hand);
         let act = await this.getAccount(key);
