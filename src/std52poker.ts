@@ -95,7 +95,7 @@ class Poker<C extends Card>{
 
 
 class Std52Card extends Card{
-  static readonly Suit : string[] = ["♠", "♥", "♦", "♣"];
+  static readonly Suit : string[] = ["♠️", "❤️", "♦️", "♣️"];
   static readonly Value : string[] = [ "2", "3", "4", "5", "6", "7", "8",
                                        "9", "10", "J", "Q", "K", "A"];
   get_string(){
