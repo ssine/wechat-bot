@@ -131,7 +131,7 @@ class Coin {
         return
       }
 
-      if (text.includes('TCP') || text.includes('tcp')){
+      if (text.toLowerCase().includes('tcp')){
         const room = msg.room()
         if (!room) return
         if (this.inGame) {

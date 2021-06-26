@@ -6,7 +6,24 @@ import {
 } from './account_utils'
 
 enum Hand_Rank {H, P, F, S, T, SF}
-const Hand_Rank_Name : string[] = ["High", "Pair", "Flush","Straight", "Three of a Kind", "Straight Flush"];
+const Hand_Rank_Name : string[] = ["高牌", "对子", "同花", "顺子", "三条", "同花顺"];
+const Pair_Plus_Bonus : Record<Hand_Rank, number> = {
+	[Hand_Rank.H] : 0,
+	[Hand_Rank.P] : 3,
+	[Hand_Rank.F] : 6,
+	[Hand_Rank.S] : 10,
+	[Hand_Rank.T] : 30,
+	[Hand_Rank.SF] : 40,
+}
+
+const Ante_Bonus : Record<Hand_Rank, number> = {
+	[Hand_Rank.H] : 0,
+	[Hand_Rank.P] : 1,
+	[Hand_Rank.F] : 2,
+	[Hand_Rank.S] : 3,
+	[Hand_Rank.T] : 4,
+	[Hand_Rank.SF] : 5,
+}
 
 /*
 Straight flush  Three suited cards in sequence  48  0.22%
@@ -124,13 +141,26 @@ function testTcpRank(){
   console.log(TCPRank.compare(a,b));
 }
 
-type TcpState = {
+class TcpState {
   contact: Contact
   username: string
   ante: number
-  hand: Card[]
+  pair_plus: number
+	hand: Array<Card>
   rank: Hand_Rank
-  play: number
+  play: boolean
+	ever_play : boolean
+
+	constructor(contact : Contact, username : string, ante: number, pair_plus: number = 0, hand : Array<Card> = [] as Card[], rank:Hand_Rank = Hand_Rank.H, play:boolean = true, ever_play:boolean = false){
+  	this.contact = contact;
+		this.username = username;
+		this.ante = ante;
+		this.pair_plus = pair_plus;
+		this.hand = hand;
+		this.rank = rank;
+		this.play = play;
+		this.ever_play = ever_play;
+	}
 }
 
 class TCPGame{
@@ -150,18 +180,20 @@ class TCPGame{
     this.accounts = accounts;
     const room = msg.room();
     this.poker.restart();
-    let state = new Map<string, any>();
-    await msg.say('Three Poker Card: \n \
-1.游戏模式: 赢过庄家(Dealer)即算赢 玩家间不竞争\n \
-2.游戏流程：第一次下注(ante)看牌 -> 决定是否第二次下注(play) -> 结算\n \
-3.大小关系：同花顺 > 三条 > 顺子 > 同花 > 一对 > 高牌 \n \
-4.收益结算：小于庄0，等于庄家退还，大于庄家两种情况: \n \
-如果庄大于等于[Q高牌],则称庄家Qualified，1:1 赔付 ante + play \n \
-Unqualified 仅1:1 赔付 ante'
+    let state = new Map<string, TcpState>();
+    await msg.say(`Three Poker Card:
+1.游戏模式: 玩家间不竞争, 下注跟庄家比，押宝单算
+2.游戏流程: 下注与押宝 -> 决定是否跟注 -> 结算
+3.大小关系：同花顺 > 三条 > 顺子 > 同花 > 对子 > 高牌
+4.额外奖金: 对子以上无论输赢。押宝赔率更高!
+`
     )
-    await msg.say('输入「来 x」付出 xB ante进行挑战，默认1。请开始输入：')
+    await msg.say('输入「来 x」下注 xB 默认1, 押宝0。\n输入「来 x y」下注xB，押宝 yB \n输入「宝 y」押宝yB 默认1, 下注1。\n 下请开始输入：')
+		const lai = "来";
+		const bao = "宝";
     const ante = async (m: Message) => {
-      if (m.room()?.id === room.id && m.text().includes('来')) {
+		if (m.room()?.id === room.id && (m.text().includes(lai)||m.text().includes(bao))) {
+
         if (state.size >= this.max_player){
           m.say(`${await getDispName(m.talker(), room)} 无效，已达到最高人数${this.max_player}`);
           return;
@@ -171,30 +203,61 @@ Unqualified 仅1:1 赔付 ante'
           m.say(`${await getDispName(m.talker(), room)} 无效，您已加入`)
           return
         }
-        const amount = parseFloat(/\d+(.\d+)?/.exec(m.text())?.[0]) || 1
-        if (amount < 1) {
+
+				let is_lai = false; //lai: true, bao: false
+
+				if(m.text().includes(lai)){
+					is_lai = true; //lai overwrite bao
+				}
+
+				let number_strings= m.text().replace(/[^\d.]/g," ").trim().split(/\s+/);
+				let ante = 1;
+				let pair_plus = 0;
+
+				if(is_lai){
+					if(number_strings.length  == 1){
+						ante = parseFloat(/\d+(\.\d+)?/.exec(number_strings[0])?.[0]) || 1;
+					}
+					else if (number_strings.length >1){
+						ante = parseFloat(/\d+(\.\d+)?/.exec(number_strings[0])?.[0]) || 1;
+						pair_plus = parseFloat(/\d+(\.\d+)?/.exec(number_strings[1])?.[0]) || 0;
+					}
+				}
+				else {  //bao
+						pair_plus = parseFloat(/\d+(\.\d+)?/.exec(number_strings[0])?.[0]) || 1;
+				}
+
+				/*
+				console.log("ANTE AND PAIR PLUS")
+				console.log(ante)
+				console.log(pair_plus)
+				*/)
+        if (ante < 1) {
           m.say(`${await getDispName(m.talker(), room)} 无效，最少押注1B`);
           return;
         }
-        if (act.balance < 2 * amount) {
-          m.say(`${await getDispName(m.talker(), room)} 余额不足2倍ante, 即${amount}B ，无法加入`);
+        if (act.balance < 2 * ante + pair_plus) {
+          m.say(`${await getDispName(m.talker(), room)} 余额不足, 即${2 * ante + pair_plus}B ，无法加入`);
           return;
         }
-        act.balance -= amount;
+
+        act.balance -= 2 * ante + pair_plus;
         let username = await getDispName(m.talker(), room);
-        state.set(m.talker().id, {
-          contact: m.talker(),
-          username: username,
-          ante: amount,
-          play: -1
-        });
+        state.set(m.talker().id, new TcpState(
+          m.talker(),
+          username,
+					ante,
+					pair_plus
+        ));
         const idx = state.size;
-        await m.say(`${idx}. ${username} 成功加入，押 ${amount}B`)
+				await m.say(`${idx}. ${username} 成功加入，下注 ${ante}B, 押宝${pair_plus}B`)
       }
     }
     this.bot.on('message', ante)
 
-    await sleep(20000)
+		await sleep(20000)
+		//await sleep(5000)
+
     this.bot.off('message', ante)
 
     const total = state.size;
@@ -214,35 +277,39 @@ Unqualified 仅1:1 赔付 ante'
       resp += Hand_Rank_Name[s.rank];
       resp += "\n";
     }
-    resp += "\nDealer: 🎴🎴🎴  \n\n是否继续play？[y/n] 是则自动ante同等下注，否则弃牌(默认)"
+    resp += "\nDealer: 🎴🎴🎴  \n\n是否跟注？[y/n] (默认y跟注, 支付同倍下注)"
     await msg.say(resp);
 
+		const yes = "y"
+		const no = "n"
     const play = async (m: Message) => {
       if (m.room()?.id === room.id) {
-        let wanna_play : number = 0;
-        if (m.text().includes('y')|| m.text().includes('Y')){
-          wanna_play = 1;
+        let wanna_play = true;
+        if (m.text().toLowerCase().includes(yes)){
         }
-        else if (m.text().includes('n')|| m.text().includes('N')){
-          ;
+        else if (m.text().toLowerCase().includes(no)){
+          wanna_play = false;
         }
         else {
           return;
         }
-        const act = await this.getAccount(m.talker().id)
+
         if (!state.has(m.talker().id)) {
           m.say(`${await getDispName(m.talker(), room)} 无效，您未下注ante`)
           return
         }
+        const act = await this.getAccount(m.talker().id)
         let s = state.get(m.talker().id);
-        if(s.play == 0 || s.play == 1){
-          return; // have decided to play or not
-        }
+				if(s.ever_play){
+					return;
+				}
+				s.ever_play = true;
         let play_resp = ""
+
         if(wanna_play){
-          act.balance -= s.ante;
-          play_resp += "决定继续游戏且再押入" + s.ante+"B";
+          play_resp += "决定跟注" + s.ante+"B";
         } else {
+          act.balance += s.ante;
           play_resp += "决定弃牌及时止损";
         }
         s.play = wanna_play;
@@ -251,7 +318,8 @@ Unqualified 仅1:1 赔付 ante'
     }
     this.bot.on('message', play)
 
-    await sleep(20000)
+	  await sleep(20000)
+		//await sleep(5000)
     this.bot.off('message', play)
 
     resp = "牌面\n\n";
@@ -261,7 +329,7 @@ Unqualified 仅1:1 赔付 ante'
         resp += c.get_string()+" "
       }
       resp += Hand_Rank_Name[s.rank];
-      if(s.play == 1){
+      if(s.play){
         resp +=" [play]"
       } else{
         resp +=" [quit]"
@@ -281,28 +349,30 @@ Unqualified 仅1:1 赔付 ante'
       resp += c.get_string()+" "
     }
     resp += Hand_Rank_Name[dealer_rank];
-    if(dealer_qualified){
-      resp += " [Qualified]\n";
-    }
-    else{
-      resp += " [Unqualified]\n";
+
+		resp +="\n"
+    if(!dealer_qualified){
+      resp += "\n庄家牌太差(小于高牌Q)，只赔一半 \n";
     }
 
-    console.log(state);
     resp += "\n结算\n\n";
 
     for (let [key, s] of state) {
-      if(s.play == 1){
+      if(s.play){
         resp += s.username + ": ";
         let res = TCPRank.compare(s.hand, dealer_hand);
         let act = await this.getAccount(key);
+				let pair_plus_bonus = Pair_Plus_Bonus[s.rank];
+				let ante_bonus = Ante_Bonus[s.rank];
+				let bonus = pair_plus_bonus * s.pair_plus + ante_bonus * s.ante;
+        act.balance += bonus;
         if(res == 0){
-          act.balance += s.ante * 2
-          resp += "Tie and push, 收益: "+ s.ante * 2 + "B\n";
+          act.balance += s.ante * 2 + s.pair_plus;
+          resp += "Tie and push, 净收益: "+bonus + "B";
         }
         else if (res < 0) // dealer win
         {
-          resp += "Lose, 收益: 0\n";
+          resp += "Lose, 净收益: " + (bonus - s.ante * 2 - s.pair_plus) + "B";
         }
         else {
           let reward : number = 0;
@@ -313,11 +383,40 @@ Unqualified 仅1:1 赔付 ante'
             reward = s.ante * 3;
           }
           act.balance += reward;
-          resp += "Win, 收益: " +reward +"B";
+          resp += "Win, 净收益: " + (reward + bonus - 2 * s.ante - s.pair_plus) +"B";
         }
-      }
+			} else {
+        resp += s.username + ": Quit, 净收益: -"+ (s.ante + s.pair_plus )+ "B";
+			}
       resp += "\n";
     }
+
+		let ever_pp = false;
+    for (let [key, s] of state) {
+      if(s.play){
+				let pair_plus_bonus = Pair_Plus_Bonus[s.rank];
+				let ante_bonus = Ante_Bonus[s.rank];
+				let bonus = pair_plus_bonus * s.pair_plus + ante_bonus * s.ante;
+				if(bonus){
+					if(!ever_pp){
+						resp += "\n\n恭喜以下几个B中宝!\n\n"
+						ever_pp = true;
+					}
+        	resp += s.username + ": " +Hand_Rank_Name[s.rank] + " " + bonus+"B\n";
+					resp += "["
+					if(pair_plus_bonus){
+						resp += pair_plus_bonus + " * 押宝(" + s.pair_plus + ")";
+					}
+					if(ante_bonus){
+						resp += " + " +  ante_bonus + " * 下注(" + s.ante +")" ;
+					}
+					resp += "]\n"
+				}
+			}
+		}
+		if(!ever_pp){
+			resp += "\n\n无人中宝\n\n"
+		}
     await msg.say(resp);
     return;
   }
