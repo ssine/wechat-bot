@@ -5,6 +5,7 @@ import {
   MessageType, RoomQueryFilter,
 } from 'wechaty-puppet'
 import {TCPGame} from './three_card_poker'
+import {RandomRedEnvelop as RandRE, EqualRedEnvelop as EqualRE} from './red_envelop'
 
 import {
   Account, CoinConfig, getDispName,
@@ -40,6 +41,8 @@ class Coin {
   writeQueue: Promise<unknown>[]
   inGame: boolean
   TcpGame: TCPGame
+  RRE :RandRE
+  ERE :EqualRE
 
   constructor(bot: Wechaty, config: CoinConfig) {
     this.bot = bot
@@ -48,6 +51,8 @@ class Coin {
     this.writeQueue = []
     this.inGame = false
     this.TcpGame = new TCPGame(this.bot);
+    this.RRE = new RandRE(this.bot);
+    this.ERE = new EqualRE(this.bot);
   }
 
   async init() {
@@ -83,7 +88,9 @@ class Coin {
 输入“比大小2”在非递减押注模式下进行
 输入“轮盘”开始轮盘游戏
 输入“轮盘2”在非递减押注模式下进行
-输入“TCP”开始Three Card Poker游戏`)
+输入“TCP”开始Three Card Poker游戏
+输入“随机红包”开始发随机红包
+输入“平分红包”开始发平分红包`)
         return
       }
 
@@ -129,6 +136,31 @@ class Coin {
         }
         msg.say(resp)
         return
+      }
+
+      if(text.includes('随机红包')){
+        const room = msg.room()
+        if (!room) return
+        if (this.inGame) {
+          msg.say('已在游戏中不可发红包');
+          return
+        }
+        this.inGame = true;
+        await this.RRE.run(msg,this.accounts);
+        await this.saveData()
+        this.inGame = false;
+      }
+      if(text.includes('平分红包')){
+        const room = msg.room()
+        if (!room) return
+        if (this.inGame) {
+          msg.say('已在游戏中不可发红包');
+          return
+        }
+        this.inGame = true;
+        await this.ERE.run(msg,this.accounts);
+        await this.saveData()
+        this.inGame = false;
       }
 
       if (text.toLowerCase().includes('tcp')){

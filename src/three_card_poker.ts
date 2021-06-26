@@ -8,21 +8,21 @@ import {
 enum Hand_Rank {H, P, F, S, T, SF}
 const Hand_Rank_Name : string[] = ["高牌", "对子", "同花", "顺子", "三条", "同花顺"];
 const Pair_Plus_Bonus : Record<Hand_Rank, number> = {
-	[Hand_Rank.H] : 0,
-	[Hand_Rank.P] : 3,
-	[Hand_Rank.F] : 6,
-	[Hand_Rank.S] : 10,
-	[Hand_Rank.T] : 30,
-	[Hand_Rank.SF] : 40,
+  [Hand_Rank.H] : 0,
+  [Hand_Rank.P] : 2,
+  [Hand_Rank.F] : 6,
+  [Hand_Rank.S] : 8,
+  [Hand_Rank.T] : 30,
+  [Hand_Rank.SF] : 40,
 }
 
 const Ante_Bonus : Record<Hand_Rank, number> = {
-	[Hand_Rank.H] : 0,
-	[Hand_Rank.P] : 1,
-	[Hand_Rank.F] : 2,
-	[Hand_Rank.S] : 3,
-	[Hand_Rank.T] : 4,
-	[Hand_Rank.SF] : 5,
+  [Hand_Rank.H] : 0,
+  [Hand_Rank.P] : 1,
+  [Hand_Rank.F] : 2,
+  [Hand_Rank.S] : 3,
+  [Hand_Rank.T] : 4,
+  [Hand_Rank.SF] : 5,
 }
 
 /*
@@ -146,21 +146,21 @@ class TcpState {
   username: string
   ante: number
   pair_plus: number
-	hand: Array<Card>
+  hand: Array<Card>
   rank: Hand_Rank
   play: boolean
-	ever_play : boolean
+  ever_play : boolean
 
-	constructor(contact : Contact, username : string, ante: number, pair_plus: number = 0, hand : Array<Card> = [] as Card[], rank:Hand_Rank = Hand_Rank.H, play:boolean = true, ever_play:boolean = false){
-  	this.contact = contact;
-		this.username = username;
-		this.ante = ante;
-		this.pair_plus = pair_plus;
-		this.hand = hand;
-		this.rank = rank;
-		this.play = play;
-		this.ever_play = ever_play;
-	}
+  constructor(contact : Contact, username : string, ante: number, pair_plus: number = 0, hand : Array<Card> = [] as Card[], rank:Hand_Rank = Hand_Rank.H, play:boolean = true, ever_play:boolean = false){
+    this.contact = contact;
+    this.username = username;
+    this.ante = ante;
+    this.pair_plus = pair_plus;
+    this.hand = hand;
+    this.rank = rank;
+    this.play = play;
+    this.ever_play = ever_play;
+  }
 }
 
 class TCPGame{
@@ -189,10 +189,10 @@ class TCPGame{
 `
     )
     await msg.say('输入「来 x」下注 xB 默认1, 押宝0。\n输入「来 x y」下注xB，押宝 yB \n输入「宝 y」押宝yB 默认1, 下注1。\n 下请开始输入：')
-		const lai = "来";
-		const bao = "宝";
+    const lai = "来";
+    const bao = "宝";
     const ante = async (m: Message) => {
-		if (m.room()?.id === room.id && (m.text().includes(lai)||m.text().includes(bao))) {
+    if (m.room()?.id === room.id && (m.text().includes(lai)||m.text().includes(bao))) {
 
         if (state.size >= this.max_player){
           m.say(`${await getDispName(m.talker(), room)} 无效，已达到最高人数${this.max_player}`);
@@ -204,40 +204,40 @@ class TCPGame{
           return
         }
 
-				let is_lai = false; //lai: true, bao: false
+        let is_lai = false; //lai: true, bao: false
 
-				if(m.text().includes(lai)){
-					is_lai = true; //lai overwrite bao
-				}
+        if(m.text().includes(lai)){
+          is_lai = true; //lai overwrite bao
+        }
 
-				let number_strings= m.text().replace(/[^\d.]/g," ").trim().split(/\s+/);
-				let ante = 1;
-				let pair_plus = 0;
+        let number_strings= m.text().replace(/[^\d.]/g," ").trim().split(/\s+/);
+        let ante = 1;
+        let pair_plus = 0;
 
-				if(is_lai){
-					if(number_strings.length  == 1){
-						ante = parseFloat(/\d+(\.\d+)?/.exec(number_strings[0])?.[0]) || 1;
-					}
-					else if (number_strings.length >1){
-						ante = parseFloat(/\d+(\.\d+)?/.exec(number_strings[0])?.[0]) || 1;
-						pair_plus = parseFloat(/\d+(\.\d+)?/.exec(number_strings[1])?.[0]) || 0;
-					}
-				}
-				else {  //bao
-						pair_plus = parseFloat(/\d+(\.\d+)?/.exec(number_strings[0])?.[0]) || 1;
-				}
+        if(is_lai){
+          if(number_strings.length  == 1){
+            ante = parseFloat(/\d+(\.\d+)?/.exec(number_strings[0])?.[0]) || 1;
+          }
+          else if (number_strings.length >1){
+            ante = parseFloat(/\d+(\.\d+)?/.exec(number_strings[0])?.[0]) || 1;
+            pair_plus = parseFloat(/\d+(\.\d+)?/.exec(number_strings[1])?.[0]) || 0;
+          }
+        }
+        else {  //bao
+            pair_plus = parseFloat(/\d+(\.\d+)?/.exec(number_strings[0])?.[0]) || 1;
+        }
 
-				/*
-				console.log("ANTE AND PAIR PLUS")
-				console.log(ante)
-				console.log(pair_plus)
-				*/)
+        /*
+        console.log("ANTE AND PAIR PLUS")
+        console.log(ante)
+        console.log(pair_plus)
+        */
         if (ante < 1) {
           m.say(`${await getDispName(m.talker(), room)} 无效，最少押注1B`);
           return;
         }
         if (act.balance < 2 * ante + pair_plus) {
-          m.say(`${await getDispName(m.talker(), room)} 余额不足, 即${2 * ante + pair_plus}B ，无法加入`);
+          m.say(`${await getDispName(m.talker(), room)} 余额为{$act.balance}B, 不足${2 * ante + pair_plus}B ，无法加入`);
           return;
         }
 
@@ -246,17 +246,17 @@ class TCPGame{
         state.set(m.talker().id, new TcpState(
           m.talker(),
           username,
-					ante,
-					pair_plus
+          ante,
+          pair_plus
         ));
         const idx = state.size;
-				await m.say(`${idx}. ${username} 成功加入，下注 ${ante}B, 押宝${pair_plus}B`)
+        await m.say(`${idx}. ${username} 成功加入，下注 ${ante}B, 押宝${pair_plus}B`)
       }
     }
     this.bot.on('message', ante)
 
-		await sleep(20000)
-		//await sleep(5000)
+    await sleep(20000)
+    //await sleep(5000)
 
     this.bot.off('message', ante)
 
@@ -280,8 +280,8 @@ class TCPGame{
     resp += "\nDealer: 🎴🎴🎴  \n\n是否跟注？[y/n] (默认y跟注, 支付同倍下注)"
     await msg.say(resp);
 
-		const yes = "y"
-		const no = "n"
+    const yes = "y"
+    const no = "n"
     const play = async (m: Message) => {
       if (m.room()?.id === room.id) {
         let wanna_play = true;
@@ -300,10 +300,10 @@ class TCPGame{
         }
         const act = await this.getAccount(m.talker().id)
         let s = state.get(m.talker().id);
-				if(s.ever_play){
-					return;
-				}
-				s.ever_play = true;
+        if(s.ever_play){
+          return;
+        }
+        s.ever_play = true;
         let play_resp = ""
 
         if(wanna_play){
@@ -318,8 +318,8 @@ class TCPGame{
     }
     this.bot.on('message', play)
 
-	  await sleep(20000)
-		//await sleep(5000)
+    await sleep(20000)
+    //await sleep(5000)
     this.bot.off('message', play)
 
     resp = "牌面\n\n";
@@ -350,7 +350,7 @@ class TCPGame{
     }
     resp += Hand_Rank_Name[dealer_rank];
 
-		resp +="\n"
+    resp +="\n"
     if(!dealer_qualified){
       resp += "\n庄家牌太差(小于高牌Q)，只赔一半 \n";
     }
@@ -362,9 +362,9 @@ class TCPGame{
         resp += s.username + ": ";
         let res = TCPRank.compare(s.hand, dealer_hand);
         let act = await this.getAccount(key);
-				let pair_plus_bonus = Pair_Plus_Bonus[s.rank];
-				let ante_bonus = Ante_Bonus[s.rank];
-				let bonus = pair_plus_bonus * s.pair_plus + ante_bonus * s.ante;
+        let pair_plus_bonus = Pair_Plus_Bonus[s.rank];
+        let ante_bonus = Ante_Bonus[s.rank];
+        let bonus = pair_plus_bonus * s.pair_plus + ante_bonus * s.ante;
         act.balance += bonus;
         if(res == 0){
           act.balance += s.ante * 2 + s.pair_plus;
@@ -385,38 +385,38 @@ class TCPGame{
           act.balance += reward;
           resp += "Win, 净收益: " + (reward + bonus - 2 * s.ante - s.pair_plus) +"B";
         }
-			} else {
+      } else {
         resp += s.username + ": Quit, 净收益: -"+ (s.ante + s.pair_plus )+ "B";
-			}
+      }
       resp += "\n";
     }
 
-		let ever_pp = false;
+    let ever_pp = false;
     for (let [key, s] of state) {
       if(s.play){
-				let pair_plus_bonus = Pair_Plus_Bonus[s.rank];
-				let ante_bonus = Ante_Bonus[s.rank];
-				let bonus = pair_plus_bonus * s.pair_plus + ante_bonus * s.ante;
-				if(bonus){
-					if(!ever_pp){
-						resp += "\n\n恭喜以下几个B中宝!\n\n"
-						ever_pp = true;
-					}
-        	resp += s.username + ": " +Hand_Rank_Name[s.rank] + " " + bonus+"B\n";
-					resp += "["
-					if(pair_plus_bonus){
-						resp += pair_plus_bonus + " * 押宝(" + s.pair_plus + ")";
-					}
-					if(ante_bonus){
-						resp += " + " +  ante_bonus + " * 下注(" + s.ante +")" ;
-					}
-					resp += "]\n"
-				}
-			}
-		}
-		if(!ever_pp){
-			resp += "\n\n无人中宝\n\n"
-		}
+        let pair_plus_bonus = Pair_Plus_Bonus[s.rank];
+        let ante_bonus = Ante_Bonus[s.rank];
+        let bonus = pair_plus_bonus * s.pair_plus + ante_bonus * s.ante;
+        if(bonus){
+          if(!ever_pp){
+            resp += "\n\n恭喜以下几个B中宝!\n\n"
+            ever_pp = true;
+          }
+          resp += s.username + ": " +Hand_Rank_Name[s.rank] + " " + bonus+"B\n";
+          resp += "["
+          if(pair_plus_bonus){
+            resp += pair_plus_bonus + " * 押宝(" + s.pair_plus + ")";
+          }
+          if(ante_bonus){
+            resp += " + " +  ante_bonus + " * 下注(" + s.ante +")" ;
+          }
+          resp += "]\n"
+        }
+      }
+    }
+    if(!ever_pp){
+      resp += "\n\n无人中宝\n\n"
+    }
     await msg.say(resp);
     return;
   }
