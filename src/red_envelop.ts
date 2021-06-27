@@ -100,7 +100,7 @@ abstract class RedEnvelop{
     await sleep(20000)
     //await sleep(5000)
     this.bot.off('message', snatch)
-    
+
     if(!state.size){
       const act = await this.getAccount(msg.talker().id)
       act.balance += amount;
@@ -162,7 +162,7 @@ class RandomRedEnvelop extends RedEnvelop {
   }
 
   getRandomIntInclusive(min:number, max:number) { // random of [min, max]
-    min = Math.ceil(min); 
+    min = Math.ceil(min);
     max = Math.floor(max);
     return Math.floor(Math.random() * (max - min + 1) + min); //The maximum is inclusive and the minimum is inclusive
   }
@@ -177,8 +177,7 @@ class RandomRedEnvelop extends RedEnvelop {
     }
     random_nums.push(amount);
 
-    random_nums.sort(); // default ascending
-
+    random_nums.sort((x,y)=>x-y);
     let i = 0;
     for (let [key, s] of state){
       if(!i){
