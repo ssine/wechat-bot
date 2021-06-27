@@ -1,11 +1,11 @@
 import { Wechaty, Room, Message } from 'wechaty'
 import {
-  MessageType,
+  MessageType, RoomQueryFilter,
 } from 'wechaty-puppet'
 
 type MessageSyncerConfig = {
-  fromRooms: Record<string, string>
-  toRooms: Record<string, string>
+  fromRooms: Record<string, RoomQueryFilter>
+  toRooms: Record<string, RoomQueryFilter>
 }
 
 class MessageSyncer {
@@ -22,26 +22,26 @@ class MessageSyncer {
   }
 
   async init() {
-    for (let topic of Object.keys(this.config.fromRooms)) {
-      const room = await this.bot.Room.find({ topic: topic })
+    for (let [name, query] of Object.entries(this.config.fromRooms)) {
+      const room = await this.bot.Room.find(query)
       if (!room) {
-        console.error(`room for ${topic} not found!`)
+        console.error(`room for ${query} not found!`)
         return
       }
       this.fromRooms.push({
         room: room,
-        name: this.config.fromRooms[topic]
+        name: name
       })
     }
-    for (let topic of Object.keys(this.config.toRooms)) {
-      const room = await this.bot.Room.find({ topic: topic })
+    for (let [name, query] of Object.entries(this.config.toRooms)) {
+      const room = await this.bot.Room.find(query)
       if (!room) {
-        console.error(`room for ${topic} not found!`)
+        console.error(`room for ${query} not found!`)
         return
       }
-      this.toRooms.push({
+      this.fromRooms.push({
         room: room,
-        name: this.config.toRooms[topic]
+        name: name
       })
     }
 
