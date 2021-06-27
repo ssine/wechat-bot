@@ -25,7 +25,7 @@ class MessageSyncer {
     for (let [name, query] of Object.entries(this.config.fromRooms)) {
       const room = await this.bot.Room.find(query)
       if (!room) {
-        console.error(`room for ${query} not found!`)
+        console.error(`room for ${query.id || query.topic} not found!`)
         return
       }
       this.fromRooms.push({
@@ -36,10 +36,10 @@ class MessageSyncer {
     for (let [name, query] of Object.entries(this.config.toRooms)) {
       const room = await this.bot.Room.find(query)
       if (!room) {
-        console.error(`room for ${query} not found!`)
+        console.error(`room for ${query.id || query.topic} not found!`)
         return
       }
-      this.fromRooms.push({
+      this.toRooms.push({
         room: room,
         name: name
       })
