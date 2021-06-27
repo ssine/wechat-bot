@@ -120,6 +120,8 @@ abstract class RedEnvelop{
       } else{
         resp += `${s.username} : ${s.reward}\n`
       }
+      const player_act = await this.getAccount(s.contact.id)
+      player_act.balance += s.reward;
     }
     resp += `\n以上用户诚挚感谢带善人 【${donor_name}】 发的${amount}B巨额红包!\n`
     await msg.say(resp);
@@ -155,7 +157,7 @@ abstract class RedEnvelop{
 
 
 class RandomRedEnvelop extends RedEnvelop {
-  constructor(bot: Wechaty, keyword:string = "随机红包",  max_player_num: number = 20, min_amount :number = 40) {
+  constructor(bot: Wechaty, keyword:string = "随机红包",  max_player_num: number = 20, min_amount :number = 1) {
     super(bot, keyword, max_player_num, min_amount);
   }
 
@@ -180,7 +182,7 @@ class RandomRedEnvelop extends RedEnvelop {
 }
 
 class EqualRedEnvelop extends RedEnvelop {
-  constructor(bot: Wechaty, keyword:string = "平分红包",  max_player_num: number = 20, min_amount :number = 40) {
+  constructor(bot: Wechaty, keyword:string = "平分红包",  max_player_num: number = 20, min_amount :number = 1) {
     super(bot, keyword, max_player_num, min_amount);
   }
 
