@@ -161,22 +161,33 @@ class RandomRedEnvelop extends RedEnvelop {
     super(bot, keyword, max_player_num, min_amount);
   }
 
+  getRandomIntInclusive(min:number, max:number) { // random of [min, max]
+    min = Math.ceil(min); 
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1) + min); //The maximum is inclusive and the minimum is inclusive
+  }
+
   share(state: Map<string, REState>, amount: number, prec:number = 2): void{
     let player_num = state.size;
-    let sumParts = 0;
     let prec_param = Math.pow(10,prec)
     amount *= prec_param;
+    let random_nums = [];
+    for (let i = 0; i < player_num-1; ++i){
+      random_nums.push(this.getRandomIntInclusive(0, amount));
+    }
+    random_nums.push(amount);
+
+    random_nums.sort(); // default ascending
+
     let i = 0;
     for (let [key, s] of state){
-      if(i < player_num - 1){
-        const pn = Math.ceil(Math.random() * (amount - sumParts))
-        s.reward = pn/prec_param;
-        sumParts += pn
-        i++;
+      if(!i){
+        s.reward = Math.round(random_nums[0])/prec_param;
       }
       else {
-        s.reward = (amount - sumParts)/prec_param;
+        s.reward = Math.round(random_nums[i] - random_nums[i-1])/prec_param;
       }
+      i++;
     }
   }
 }
