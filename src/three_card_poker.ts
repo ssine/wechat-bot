@@ -9,9 +9,9 @@ enum Hand_Rank {H, P, F, S, T, SF}
 const Hand_Rank_Name : string[] = ["高牌", "对子", "同花", "顺子", "三条", "同花顺"];
 const Pair_Plus_Bonus : Record<Hand_Rank, number> = {
   [Hand_Rank.H] : 0,
-  [Hand_Rank.P] : 3,
+  [Hand_Rank.P] : 2,
   [Hand_Rank.F] : 6,
-  [Hand_Rank.S] : 10,
+  [Hand_Rank.S] : 8,
   [Hand_Rank.T] : 30,
   [Hand_Rank.SF] : 40,
 }

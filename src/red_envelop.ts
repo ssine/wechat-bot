@@ -79,14 +79,13 @@ abstract class RedEnvelop{
       if (m.room()?.id === room.id && m.text().includes(lai)) {
 
         let username = await getDispName(m.talker(), room);
-        if (state.size >= player_num){
-          m.say(`${username} 无效，已达到最高人数${player_num}`);
-          return;
-        }
-        const act = await this.getAccount(m.talker().id)
         if (state.has(m.talker().id)) {
           m.say(`${username} 无效，您已加入`)
           return
+        }
+        if (state.size >= player_num){
+          m.say(`${username} 无效，已达到最高人数${player_num}`);
+          return;
         }
         m.say(`${username} 成功加入`)
         state.set(m.talker().id, new REState(
