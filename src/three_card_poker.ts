@@ -9,9 +9,9 @@ enum Hand_Rank {H, P, F, S, T, SF}
 const Hand_Rank_Name : string[] = ["高牌", "对子", "同花", "顺子", "三条", "同花顺"];
 const Pair_Plus_Bonus : Record<Hand_Rank, number> = {
   [Hand_Rank.H] : 0,
-  [Hand_Rank.P] : 2,
+  [Hand_Rank.P] : 3,
   [Hand_Rank.F] : 6,
-  [Hand_Rank.S] : 8,
+  [Hand_Rank.S] : 10,
   [Hand_Rank.T] : 30,
   [Hand_Rank.SF] : 40,
 }
@@ -54,7 +54,10 @@ class TCPRank{
       if(hand[0].value == hand[1].value + 1 && hand[1].value == hand[2].value + 1){
         is_straight = true;
       }
-      else if (hand[0].value == 12 && hand[1].value == 0 && hand[2].value == 1){
+      else if (hand[0].value == 12 && hand[1].value == 1 && hand[2].value == 0){
+        let swap = hand[1].value;
+        hand[1].value = hand[2].value;
+        hand[2].value = swap;
         is_straight = true;
       }
 
@@ -163,6 +166,12 @@ class TcpState {
   }
 }
 
+
+type SMInfo = {
+  if_shuffle: boolean,
+  resp :string
+}
+
 class TCPGame{
   bot: Wechaty
   accounts: Record<string, Account>
@@ -176,10 +185,40 @@ class TCPGame{
     this.max_player = max_player
   }
 
+  //不洗牌机制
+  no_shuffling_mechanism(no_shuffle: boolean = true, cost: number = 0, shuffling_threshold: number = 0):SMInfo{
+    if(!no_shuffle){
+      this.poker.restart();
+      return {
+        if_shuffle:true,
+        resp:"不洗牌模式未开启，每局自动洗牌"
+      };
+    }
+    if (cost + shuffling_threshold > this.poker.remainder()){
+      this.poker.restart();
+      let resp = "";
+      if(shuffling_threshold){
+        resp = "( 余牌 - "+ shuffling_threshold+" )不足"+cost+"张, 洗牌"
+      }
+      else {
+        resp = "余牌不足"+cost+"张, 洗牌"
+      }
+      return {
+        if_shuffle:true,
+        resp:resp
+      };
+    }
+    else {
+      return {
+        if_shuffle:false,
+        resp: "余牌重组，不洗牌"
+      };
+    }
+  }
+
   async run(msg: Message, accounts: Record<string, Account>){
     this.accounts = accounts;
     const room = msg.room();
-    this.poker.restart();
     let state = new Map<string, TcpState>();
     await msg.say(`Three Poker Card:
 1.游戏模式: 玩家间不竞争, 下注跟庄家比，押宝单算
@@ -266,7 +305,11 @@ class TCPGame{
       return
     }
 
-    let resp = '发牌\n\n'
+    let resp = "";
+    let nsm_res = this.no_shuffling_mechanism(true,(state.size + 1)*3, 0);
+
+    resp += nsm_res.resp+"\n\n";
+    resp += '发牌\n\n'
     for (let [key, s] of state) {
       resp += s.username + ": ";
       s.hand = this.poker.deal();
