@@ -90,7 +90,11 @@ class Poker<C extends Card>{
     }
     return ret;
 
-    }
+ }
+
+ remainder(){
+  return this.cards_num - this.next;
+ }
 }
 
 
