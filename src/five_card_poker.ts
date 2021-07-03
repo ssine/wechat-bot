@@ -449,7 +449,10 @@ class FCPGame{
     let div_pot = Math.floor((pot/champion_keys.size)*100)/100;
 
     resp += `\n恭喜 ${champion_names} 成功吃鸡！ 赢家收获 ${div_pot}B\n\n`;
-    resp += `\n恭喜 ${runnerup_names} 成功喝汤！ 返还换牌钱\n\n`;
+
+    if(runnerup_keys.size){
+      resp += `\n恭喜 ${runnerup_names} 成功喝汤！ 返还换牌钱\n\n`;
+    }
 
     resp += "全体收益细则:\n\n";
 
