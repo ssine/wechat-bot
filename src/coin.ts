@@ -62,11 +62,9 @@ class Coin {
     this.accounts = JSON.parse(await fs.promises.readFile(this.config.storage, 'utf-8'))
 
     this.bot.on('message', async (msg: Message) => {
-    /*
       if (msg.self() || msg.age() > 3 * 60) {
         return
       }
-      */
 
       const text = msg.text()
       if (text.includes('充值') && msg.talker().id === this.config.adminId) {
@@ -84,9 +82,7 @@ class Coin {
         return
       }
 
-      /*
       if (!await msg.mentionSelf()) return
-      */
 
       if (text.includes('7u币') || text.includes('7U币')) {
         msg.say(`输入“我的”查看余额
