@@ -185,7 +185,7 @@ class Coin {
         return
       }
 
-      if (text.toLowerCase().includes('决斗')){
+      if (text.includes('决斗')){
         const room = msg.room()
         if (!room) return
         if (this.inGame) {
