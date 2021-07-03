@@ -201,13 +201,15 @@ class FCPGame{
   max_player: number
   shuffling_threshold:number
   no_shuffle: boolean
+  change_rate:number
 
-  constructor(bot: Wechaty, no_shuffle: boolean = true, shuffling_threshold: number = 10, max_player: number = 5 ) {
+  constructor(bot: Wechaty, no_shuffle: boolean = true, shuffling_threshold: number = 10, max_player: number = 5, change_rate: number = 1 ) {
     this.bot = bot
     this.poker = new FiveCardPoker()
     this.max_player = max_player
     this.shuffling_threshold = shuffling_threshold
     this.no_shuffle = no_shuffle
+    this.change_rate = change_rate
   }
 
   //不洗牌机制
@@ -347,7 +349,7 @@ class FCPGame{
 
 
         const act = await this.getAccount(m.talker().id);
-        let change_cost = change_card_ids.size * blind;
+        let change_cost = change_card_ids.size * blind * this.change_rate;
 
         if (act.balance < change_cost) {
           let most = Math.floor(act.balance/ blind)
@@ -366,7 +368,7 @@ class FCPGame{
         let change_id_string = "";
 
         for(let i = 0; i< s.change_card_ids.length - 1; ++i){
-        
+
           change_id_string += (s.change_card_ids[i]+1) +" ";
         }
 
@@ -401,37 +403,66 @@ class FCPGame{
     resp += "\n结算\n";
 
 
+    resp += "\n总奖池大小为"+ pot + "\n";
+
     let ranked_state = [...state].sort((a,b)=> FCPRank.compare(b[1].hand, a[1].hand)) // Descending
 
-    let winner_keys = new Set<string>();
 
-    winner_keys.add(ranked_state[0][0]);
-    let winner_names =ranked_state[0][1].username;
+    let champion_keys = new Set<string>();
+    let runnerup_keys = new Set<string>();
 
+    champion_keys.add(ranked_state[0][0]);
+    let champion_names =ranked_state[0][1].username;
+    let runnerup_names = "";
+
+    let runner_up_start = ranked_state.length;
     for(let i = 1 ; i< ranked_state.length; ++i){
       let res = FCPRank.compare(ranked_state[i-1][1].hand, ranked_state[i][1].hand);
       if(res == 0){
-        winner_keys.add(ranked_state[i][0])
-        winner_names+=ranked_state[i][1].username + " ";
+        champion_keys.add(ranked_state[i][0])
+        champion_names+=ranked_state[i][1].username + " ";
+      }
+      else {
+        runnerup_keys.add(ranked_state[i][0])
+        runnerup_names+=ranked_state[i][1].username + " ";
+        runner_up_start = i;
+        break;
+      }
+    }
+
+    for(let i = 1 + runner_up_start ; i< ranked_state.length; ++i){
+      let res = FCPRank.compare(ranked_state[i-1][1].hand, ranked_state[i][1].hand);
+      if(res == 0){
+        runnerup_keys.add(ranked_state[i][0])
+        runnerup_names+=ranked_state[i][1].username + " ";
       }
       else {
         break;
       }
     }
-    resp += "\n总奖池大小为"+ pot + "\n\n";
 
-    let div_pot = Math.floor((pot/winner_keys.size)*100)/100;
 
-    resp += `\n恭喜 ${winner_names} 成功吃鸡！ 赢家收获 ${div_pot}B\n\n`;
+    for(let r of runnerup_keys){
+      pot -= state.get(r).change;
+    }
+
+    let div_pot = Math.floor((pot/champion_keys.size)*100)/100;
+
+    resp += `\n恭喜 ${champion_names} 成功吃鸡！ 赢家收获 ${div_pot}B\n\n`;
+    resp += `\n恭喜 ${runnerup_names} 成功喝汤！ 返还换牌钱\n\n`;
 
     resp += "全体收益细则:\n\n";
 
     for(let [key, s] of state){
       resp += s.username + ": ";
       let act = await this.getAccount(key);
-      if(winner_keys.has(key)){
+      if(champion_keys.has(key)){
         act.balance += div_pot
         resp += "Win 净收益: "+(div_pot - s.ante - s.change) + "B";
+      }
+      else if(runnerup_keys.has(key)){
+        act.balance += s.change
+        resp += "Win 净收益: "+(- s.ante) + "B";
       }
       else
       {
