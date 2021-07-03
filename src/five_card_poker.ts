@@ -175,13 +175,14 @@ class FcpState {
   rank: FCP_Hand_Rank
   ever_change: boolean
 
-  constructor(contact : Contact, username : string, ante: number, change: number = 0, hand : Array<Card> = [] as Card[], rank:FCP_Hand_Rank = FCP_Hand_Rank.H, ever_change: boolean = false){
+  constructor(contact : Contact, username : string, ante: number, change: number = 0, change_card_ids: Array<number> = [], hand : Array<Card> = [] as Card[], rank:FCP_Hand_Rank = FCP_Hand_Rank.H, ever_change: boolean = false){
     this.contact = contact;
     this.username = username;
     this.ante = ante;
     this.change = change;
     this.hand = hand;
     this.rank = rank;
+    this.change_card_ids = change_card_ids;
     this.ever_change = ever_change;
   }
 }
