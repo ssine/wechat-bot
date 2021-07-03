@@ -6,7 +6,7 @@ import {
 } from './account_utils'
 
 enum FCP_Hand_Rank {H, P, TP, TK, S, F,FH, FK, SF, RF}
-const FCP_Hand_Rank_Name : string[] = ["高牌", "对子","两对","三条" ,"顺子","同花", "葫芦", "四条", "同花顺","皇家同化顺"];
+const FCP_Hand_Rank_Name : string[] = ["高牌", "对子","两对","三条" ,"顺子","同花", "葫芦", "四条", "同花顺","皇家同花顺"];
 
 class FiveCardPoker extends Std52Poker{
   deal5(){
