@@ -178,40 +178,41 @@ class TCPGame{
   poker: ThreeCardPoker
   rank: TCPRank
   max_player: number
+  shuffling_threshold:number
+  no_shuffle: boolean
 
-  constructor(bot: Wechaty, max_player: number = 8) {
+  constructor(bot: Wechaty, max_player: number = 8, no_shuffle: boolean = true, shuffling_threshold: number = 0) {
     this.bot = bot
     this.poker = new ThreeCardPoker()
     this.max_player = max_player
+    this.shuffling_threshold = shuffling_threshold
+    this.no_shuffle = no_shuffle
   }
 
   //不洗牌机制
-  no_shuffling_mechanism(no_shuffle: boolean = true, cost: number = 0, shuffling_threshold: number = 0):SMInfo{
-    if(!no_shuffle){
+  no_shuffling_mechanism(cost: number = 0):SMInfo{
+    if(!this.no_shuffle){
       this.poker.restart();
       return {
         if_shuffle:true,
         resp:"不洗牌模式未开启，每局自动洗牌"
       };
     }
-    if (cost + shuffling_threshold > this.poker.remainder()){
+    let baseline = cost + this.shuffling_threshold;
+    let resp = "余牌"+ this.poker.remainder()+"张";
+    if (baseline > this.poker.remainder()){
       this.poker.restart();
-      let resp = "";
-      if(shuffling_threshold){
-        resp = "( 余牌 - "+ shuffling_threshold+" )不足"+cost+"张, 洗牌"
-      }
-      else {
-        resp = "余牌不足"+cost+"张, 洗牌"
-      }
+      resp += ",不足"+baseline+"张, 洗牌"
       return {
         if_shuffle:true,
         resp:resp
       };
     }
     else {
+      resp += ",余牌充足，不洗牌";
       return {
         if_shuffle:false,
-        resp: "余牌重组，不洗牌"
+        resp: resp
       };
     }
   }
@@ -306,17 +307,17 @@ class TCPGame{
     }
 
     let resp = "";
-    let nsm_res = this.no_shuffling_mechanism(true,(state.size + 1)*3, 0);
+    let nsm_res = this.no_shuffling_mechanism((state.size + 1)*3);
 
     resp += nsm_res.resp+"\n\n";
     resp += '发牌\n\n'
     for (let [key, s] of state) {
       resp += s.username + ": ";
       s.hand = this.poker.deal();
+      s.rank = TCPRank.hand_rank(s.hand);
       for (let c of s.hand){
         resp += c.get_string()+" "
       }
-      s.rank = TCPRank.hand_rank(s.hand);
       resp += Hand_Rank_Name[s.rank];
       resp += "\n";
     }
@@ -338,7 +339,7 @@ class TCPGame{
         }
 
         if (!state.has(m.talker().id)) {
-          m.say(`${await getDispName(m.talker(), room)} 无效，您未下注ante`)
+          m.say(`${await getDispName(m.talker(), room)} 无效，您未参与游戏，请参加下一轮`)
           return
         }
         const act = await this.getAccount(m.talker().id)
@@ -478,7 +479,6 @@ class TCPGame{
 export {
   TCPGame
 }
-
 
 
 //testTcpRank();

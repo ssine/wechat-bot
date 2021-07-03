@@ -5,6 +5,7 @@ import {
   MessageType, RoomQueryFilter,
 } from 'wechaty-puppet'
 import {TCPGame} from './three_card_poker'
+import {FCPGame} from './five_card_poker'
 import {RandomRedEnvelop as RandRE, EqualRedEnvelop as EqualRE} from './red_envelop'
 
 import {
@@ -41,6 +42,7 @@ class Coin {
   writeQueue: Promise<unknown>[]
   inGame: boolean
   TcpGame: TCPGame
+  FcpGame: FCPGame
   RRE :RandRE
   ERE :EqualRE
 
@@ -51,6 +53,7 @@ class Coin {
     this.writeQueue = []
     this.inGame = false
     this.TcpGame = new TCPGame(this.bot);
+    this.FcpGame = new FCPGame(this.bot);
     this.RRE = new RandRE(this.bot);
     this.ERE = new EqualRE(this.bot);
   }
@@ -59,9 +62,11 @@ class Coin {
     this.accounts = JSON.parse(await fs.promises.readFile(this.config.storage, 'utf-8'))
 
     this.bot.on('message', async (msg: Message) => {
+    /*
       if (msg.self() || msg.age() > 3 * 60) {
         return
       }
+      */
 
       const text = msg.text()
       if (text.includes('充值') && msg.talker().id === this.config.adminId) {
@@ -79,7 +84,9 @@ class Coin {
         return
       }
 
+      /*
       if (!await msg.mentionSelf()) return
+      */
 
       if (text.includes('7u币') || text.includes('7U币')) {
         msg.say(`输入“我的”查看余额
@@ -89,6 +96,7 @@ class Coin {
 输入“轮盘”开始轮盘游戏
 输入“轮盘2”在非递减押注模式下进行
 输入“TCP”开始Three Card Poker游戏
+输入“决斗 X”开始决斗游戏, 底注为X
 输入“随机红包”开始发随机红包
 输入“平分红包”开始发平分红包`)
         return
@@ -172,6 +180,20 @@ class Coin {
         }
         this.inGame = true;
         await this.TcpGame.run(msg,this.accounts);
+        await this.saveData()
+        this.inGame = false
+        return
+      }
+
+      if (text.includes('决斗')){
+        const room = msg.room()
+        if (!room) return
+        if (this.inGame) {
+          msg.say('已在游戏中！')
+          return
+        }
+        this.inGame = true;
+        await this.FcpGame.run(msg,this.accounts, text);
         await this.saveData()
         this.inGame = false
         return
