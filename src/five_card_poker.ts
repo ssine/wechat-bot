@@ -580,6 +580,8 @@ class FCPGame{
       let odds = FCP_Bonus_Odds[s.rank];
       s.bonus = odds * (s.ante + s.change);
       if(s.bonus){
+        let act = await this.getAccount(key);
+        act.balance += s.bonus;
         if(!ever_pp){
           resp += "\n恭喜以下几个B中宝!\n\n"
           ever_pp = true;
