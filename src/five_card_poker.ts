@@ -11,14 +11,14 @@ const FCP_Hand_Rank_Name : string[] = ["高牌", "对子","两对","三条" ,"�
 const FCP_Bonus_Odds : Record<FCP_Hand_Rank, number> = {
   [FCP_Hand_Rank.H] : 0,
   [FCP_Hand_Rank.P] : 0,
-  [FCP_Hand_Rank.TP] : 1,
-  [FCP_Hand_Rank.TK] : 2,
-  [FCP_Hand_Rank.S] : 3,
-  [FCP_Hand_Rank.F] : 5,
-  [FCP_Hand_Rank.FH] : 7,
-  [FCP_Hand_Rank.FK] : 40,
-  [FCP_Hand_Rank.SF] : 700,
-  [FCP_Hand_Rank.RF] : 6000,
+  [FCP_Hand_Rank.TP] : 0.5,
+  [FCP_Hand_Rank.TK] : 1,
+  [FCP_Hand_Rank.S] : 2,
+  [FCP_Hand_Rank.F] : 3,
+  [FCP_Hand_Rank.FH] : 5,
+  [FCP_Hand_Rank.FK] : 30,
+  [FCP_Hand_Rank.SF] : 600,
+  [FCP_Hand_Rank.RF] : 5000,
 }
 
 /*
@@ -574,25 +574,27 @@ class FCPGame{
       resp += `恭喜 ${runnerup_names} 成功喝汤！ 返还换牌钱\n`;
     }
 
-
-    let ever_pp = false;
-    for (let [key, s] of state) {
-      let odds = FCP_Bonus_Odds[s.rank];
-      s.bonus = odds * (s.ante + s.change);
-      if(s.bonus){
-        let act = await this.getAccount(key);
-        act.balance += s.bonus;
-        if(!ever_pp){
-          resp += "\n恭喜以下几个B中宝!\n\n"
-          ever_pp = true;
+    if(state.size > 1){
+      let ever_pp = false;
+      for (let [key, s] of state) {
+        let odds = FCP_Bonus_Odds[s.rank];
+        s.bonus = odds * (s.ante + s.change);
+        if(s.bonus){
+          let act = await this.getAccount(key);
+          act.balance += s.bonus;
+          if(!ever_pp){
+            resp += "\n恭喜以下几个B中宝!\n\n"
+            ever_pp = true;
+          }
+          resp += s.username + ": " +FCP_Hand_Rank_Name[s.rank] + " " + s.bonus+"B\n";
+          resp += `=${odds} * 总下注 ${s.ante+s.change}\n`
         }
-        resp += s.username + ": " +FCP_Hand_Rank_Name[s.rank] + " " + s.bonus+"B\n";
-        resp += `=${odds} * 总下注 ${s.ante+s.change}\n`
+      }
+      if(!ever_pp){
+        resp += "\n无人中宝\n"
       }
     }
-    if(!ever_pp){
-      resp += "\n无人中宝\n"
-    }
+
 
     resp += "\n全体收益细则:\n\n";
 
