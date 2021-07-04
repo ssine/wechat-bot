@@ -23,7 +23,7 @@
     "wechaty": "^0.60.10",
     "wechaty-plugin-contrib": "^0.11.4",
     "wechaty-puppet": "^0.35.1",
-    "wechaty-puppet-padlocal": "^0.4.0",
+    "wechaty-puppet-padlocal": "^0.4.1",
     "wechaty-puppet-wechat": "^0.28.1"
   },
   "devDependencies": {
