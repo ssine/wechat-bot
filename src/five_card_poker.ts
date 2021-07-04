@@ -37,30 +37,31 @@ const FCP_Bonus_Odds : Record<FCP_Hand_Rank, number> = {
 */
 
 class FiveCardPoker extends Std52Poker{
-  deal5(){
-    return super.deal(5);
+  deal_hand(){
+    return super.deal(6);
   }
 }
 
 class FCPRank{
   static hand_rank(hand: Card[]){
-      if(hand.length != 5){
+      if(hand.length != 6){
         return -1
       }
 
       //hand.sort((card1:Card, card2:Card) =>{ return card2.value - card1.value}); // Descending order
 
-      let card_counter = new Map<number, Card[] >();
+
+      let value_counter = new Map<number, Card[] >();
       for(let h of hand){
-        if(card_counter.has(h.value)){
-          card_counter.get(h.value).push(h);
+        if(value_counter.has(h.value)){
+          value_counter.get(h.value).push(h);
         }
         else {
-          card_counter.set(h.value, [h] as Card[]);
+          value_counter.set(h.value, [h] as Card[]);
         }
       }
 
-      let ranked_counter  = [...card_counter].sort((a, b) =>{ //Descending
+      let ranked_value_counter  = [...value_counter].sort((a, b) =>{ //Descending
         let res1 = b[1].length - a[1].length;
         if (!res1){
           return b[0] - a[0];
@@ -70,68 +71,152 @@ class FCPRank{
 
 
       hand.length = 0; //clear hand
-      for(let cards of ranked_counter){
+
+      for(let cards of ranked_value_counter){
         cards.forEach(card => hand.push(card))
       }
 
-      let is_flush: boolean = true;
-      let is_straight: boolean = true;
+
+
+      let is_straight_vec : Array<boolean> = [true, true, false];
+      let is_flush_vec : Array<boolean> = [true, true, false];
 
       for(let i = 0; i< 4; i++){
         if(hand[i].value != hand[i+1].value+1){
-          is_straight = false;
+          is_straight_vec[0] = false;
           break;
         }
-      }
-
-      // A2345
-      if (hand[0].value == 12 && hand[1].value == 3 && hand[2].value == 2 && hand[3].value== 1 && hand[4].value == 0){
-        hand[0].value = 3;
-        hand[1].value = 2;
-        hand[2].value = 1;
-        hand[3].value = 0;
-        hand[4].value = 12;
-        is_straight = true;
       }
 
       for(let i = 0; i< 4; i++){
         if(hand[i].suit != hand[i+1].suit){
-          is_flush = false;
+          is_flush_vec[0] = false;
           break;
         }
       }
 
-      if (is_straight && is_flush){
-        return FCP_Hand_Rank.SF;
+      for(let i = 1; i< 5; i++){
+        if(hand[i].value != hand[i+1].value+1){
+          is_straight_vec[1] = false;
+          break;
+        }
+      }
+
+      for(let i = 1; i< 5; i++){
+        if(hand[i].suit != hand[i+1].suit){
+          is_flush_vec[1] = false;
+          break;
+        }
+      }
+
+      if (hand[0].value == 12 && hand[hand.length-4].value == 3 && hand[hand.length-3].value == 2 && hand[hand.length-2].value== 1 && hand[hand.length-1].value == 0){
+        is_straight_vec[2] = true;
+      }
+
+      if (hand[0].suit ==  hand[hand.length-4].suit &&
+         hand[hand.length-4].suit ==  hand[hand.length-3].suit &&
+         hand[hand.length-3].suit ==  hand[hand.length-2].suit &&
+         hand[hand.length-2].suit ==  hand[hand.length-1].suit){
+        is_flush_vec[2] = true;
       }
 
 
-      if(ranked_counter[0].length == 4){
+
+     // A.RF > A.SF > B.SF > C.SF > FK> FH > F>  A.S > B.S >C.S
+
+     if(is_straight_vec[0] && is_flush_vec[0]){ //AbcdeX
+         if(hand[0].value == 12){
+            return FCP_Hand_Rank.RF;
+         }
+         else {
+            return FCP_Hand_Rank.SF;
+         }
+     }
+
+     if(is_straight_vec[1] && is_flush_vec[1]){ // Xabcde
+        let hand_swp =  hand[0]
+        for(let i = 0; i< hand.length-1; i++){
+            hand[i] = hand[i+1];
+        }
+        hand[hand.length-1] = hand_swp
+        return FCP_Hand_Rank.SF;
+     }
+
+     if(is_straight_vec[2] && is_flush_vec[2]){ // AX5432
+        let hand_A =  hand[0]
+        let hand_X =  hand[1]
+        for(let i = 0; i< hand.length-2; i++){
+            hand[i] = hand[i+2];
+        }
+        hand[hand.length-2]  = hand_A
+        hand[hand.length-1]  = hand_X
+        return FCP_Hand_Rank.SF;
+     }
+
+      if(ranked_value_counter[0].length == 4){
         return FCP_Hand_Rank.FK
       }
 
 
-      if(ranked_counter[0].length == 3 && ranked_counter[1].length == 2){
+      if(ranked_value_counter[0].length == 3 && ranked_value_counter[1].length > 1){
         return FCP_Hand_Rank.FH
       }
 
-      if(is_flush){
+      let suit_counter = new Map<number, Card[] >();
+      for(let h of hand){
+        if(suit_counter.has(h.suit)){
+          suit_counter.get(h.suit).push(h);
+        }
+        else {
+          suit_counter.set(h.suit, [h] as Card[]);
+        }
+      }
+
+      let ranked_suit_counter  = [...suit_counter].sort((a, b) =>{ //Descending
+        return b[1].length - a[1].length;
+       }).map(x=>x[1]);  // [Card[], Card[], Card[]]
+
+      if(ranked_suit_counter[0].length == 5){
+        let flush = ranked_suit_counter[0].sort((a,b) => b.value - a.value);
+        hand.length = 0; //clear hand
+        flush.forEach(card => hand.push(card))
+        hand.push(ranked_suit_counter[1][0]);
         return FCP_Hand_Rank.F;
       }
 
-      if (is_straight){
+      if (is_straight_vec[0]){
         return FCP_Hand_Rank.S;
       }
 
-      if(ranked_counter[0].length == 3){
+      if (is_straight_vec[1]){
+        let hand_swp =  hand[0]
+        for(let i = 0; i< hand.length-1; i++){
+            hand[i] = hand[i+1];
+        }
+        hand[hand.length-1]  = hand_swp
+        return FCP_Hand_Rank.S;
+      }
+
+      if (is_straight_vec[2]){
+        let hand_A =  hand[0]
+        let hand_X =  hand[1]
+        for(let i = 0; i< hand.length-2; i++){
+            hand[i] = hand[i+2];
+        }
+        hand[hand.length-2]  = hand_A
+        hand[hand.length-1]  = hand_X
+        return FCP_Hand_Rank.S;
+      }
+
+      if(ranked_value_counter[0].length == 3){
         return FCP_Hand_Rank.TK;
       }
 
-      if(ranked_counter[0].length == 2 && ranked_counter[1].length == 2 ){
+      if(ranked_value_counter[0].length == 2 && ranked_value_counter[1].length == 2 ){
         return FCP_Hand_Rank.TP;
       }
 
-      if(ranked_counter[0].length == 2){
+      if(ranked_value_counter[0].length == 2){
         return FCP_Hand_Rank.P;
       }
 
@@ -167,9 +252,9 @@ function testFCPRank(){
 
   let fcp = new FiveCardPoker();
 
-  // let a = fcp.deal5();
+  // let a = fcp.deal_hand();
 
-  let a = [ new Card(0,12), new Card(0,11),new Card(0,10), new Card(0,9),new Card(0,8) ]
+  let a = [ new Card(0,12), new Card(0,11),new Card(0,3), new Card(0,2),new Card(0,1), new Card(0,0)]
   console.log("hand_rank of a")
   console.log(FCP_Hand_Rank_Name[FCPRank.hand_rank(a)]);
   console.log("a");
@@ -177,8 +262,10 @@ function testFCPRank(){
     x.print();
   }
 
-  // let b = fcp.deal5();
-  let b = [new Card(1,12), new Card(0,11),new Card(0,10), new Card(0,9),new Card(0,8)]
+  // let b = fcp.deal_hand();
+  // let b = [new Card(1,12), new Card(0,11),new Card(0,10), new Card(0,9),new Card(0,8), new Card(0,7)]
+  // let b = [new Card(1,12), new Card(0,12),new Card(2,12), new Card(0,9),new Card(1,9), new Card(2,9)]
+  let b = [ new Card(0,12), new Card(1,12),new Card(0,3), new Card(0,2),new Card(0,1), new Card(0,0)]
   console.log("hand_rank of b")
   console.log(FCP_Hand_Rank_Name[FCPRank.hand_rank(b)]);
 
@@ -191,7 +278,8 @@ function testFCPRank(){
   console.log(FCPRank.compare(a,b));
 }
 
-//testFCPRank();
+// testFCPRank();
+
 
 class FcpState {
   contact: Contact
@@ -233,7 +321,7 @@ class FCPGame{
   no_shuffle: boolean
   change_rate:number
 
-  constructor(bot: Wechaty, no_shuffle: boolean = false, shuffling_threshold: number = 10, max_player: number = 5, change_rate: number = 1 ) {
+  constructor(bot: Wechaty, no_shuffle: boolean = false, shuffling_threshold: number = 10, max_player: number = 4, change_rate: number = 1 ) {
     this.bot = bot
     this.poker = new FiveCardPoker()
     this.max_player = max_player
@@ -278,7 +366,7 @@ class FCPGame{
     let pot = 0;
     await msg.say(`决斗:
 
-1.游戏模式: 多人吃鸡模式
+1.游戏模式: 多人吃鸡模式, 只比最大五张
 2.游戏流程: 前注 -> 加注换牌 -> 结算
 3.大小关系: 同花顺 > 四条 > 葫芦 > 同花 > 顺子 > 三条 > 两对 > 对子 > 高牌
 4.换牌: 换X张需要再加注X倍前注
@@ -341,7 +429,7 @@ class FCPGame{
     resp += '发牌\n\n'
     for (let [key, s] of state) {
       resp += s.username + ": ";
-      s.hand = this.poker.deal5();
+      s.hand = this.poker.deal_hand();
       s.rank = FCPRank.hand_rank(s.hand);
       resp += FCP_Hand_Rank_Name[s.rank] + "\n";
       for (let c of s.hand){
@@ -366,12 +454,12 @@ class FCPGame{
         }
 
         let number_strings= m.text().replace(/[^\d]/g," ").trim().split(/\s+/);
-        let number_length = Math.min(5, number_strings.length);
+        let number_length = Math.min(6, number_strings.length);
         let change_card_ids = new Set<number>();
         for(let i = 0; i< number_length; i++){
           let id = parseFloat(/\d/.exec(number_strings[i])?.[0]) || -1;
-          if(id < 1 || id > 5 ){
-            m.say(`${await getDispName(m.talker(), room)} 输入换牌序号格式有误，请检查是否为1-5`)
+          if(id < 1 || id > 6 ){
+            m.say(`${await getDispName(m.talker(), room)} 输入换牌序号格式有误，请检查是否为1-6`)
             return;
           }
           change_card_ids.add(id-1);
@@ -472,15 +560,17 @@ class FCPGame{
     }
 
 
-    for(let r of runnerup_keys){
-      pot -= state.get(r).change;
+    if(state.size !=2 ){
+      for(let r of runnerup_keys){
+        pot -= state.get(r).change;
+      }
     }
 
     let div_pot = Math.floor((pot/champion_keys.size)*100)/100;
 
     resp += `恭喜 ${champion_names} 成功吃鸡！ 赢家收获 ${div_pot}B\n`;
 
-    if(runnerup_keys.size){
+    if(state.size !=2 && runnerup_keys.size){
       resp += `恭喜 ${runnerup_names} 成功喝汤！ 返还换牌钱\n`;
     }
 
@@ -511,7 +601,7 @@ class FCPGame{
         act.balance += div_pot
         resp += "吃鸡 净收益: "+(div_pot - s.ante - s.change + s.bonus) + "B";
       }
-      else if(runnerup_keys.has(key)){
+      else if(state.size != 2 && runnerup_keys.has(key)){
         act.balance += s.change
         resp += "喝汤 净收益: "+(- s.ante + s.bonus) + "B";
       }
