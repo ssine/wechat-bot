@@ -8,6 +8,34 @@ import {
 enum FCP_Hand_Rank {H, P, TP, TK, S, F,FH, FK, SF, RF}
 const FCP_Hand_Rank_Name : string[] = ["高牌", "对子","两对","三条" ,"顺子","同花", "葫芦", "四条", "同花顺","皇家同花顺"];
 
+const FCP_Bonus_Odds : Record<FCP_Hand_Rank, number> = {
+  [FCP_Hand_Rank.H] : 0,
+  [FCP_Hand_Rank.P] : 0,
+  [FCP_Hand_Rank.TP] : 1,
+  [FCP_Hand_Rank.TK] : 2,
+  [FCP_Hand_Rank.S] : 3,
+  [FCP_Hand_Rank.F] : 5,
+  [FCP_Hand_Rank.FH] : 7,
+  [FCP_Hand_Rank.FK] : 40,
+  [FCP_Hand_Rank.SF] : 700,
+  [FCP_Hand_Rank.RF] : 6000,
+}
+
+/*
+
+1/p =
+
+  P : 2.366,
+  TP : 21,
+  TK : 47.33,
+  S : 254.8,
+  F : 509.8,
+  FH : 694.2,
+  FK : 4166,
+  SF : 72193.333,
+  RF : 649,749,
+*/
+
 class FiveCardPoker extends Std52Poker{
   deal5(){
     return super.deal(5);
@@ -170,16 +198,18 @@ class FcpState {
   username: string
   ante: number
   change: number
+  bonus:number
   change_card_ids: Array<number>
   hand: Array<Card>
   rank: FCP_Hand_Rank
   ever_change: boolean
 
-  constructor(contact : Contact, username : string, ante: number, change: number = 0, change_card_ids: Array<number> = [], hand : Array<Card> = [] as Card[], rank:FCP_Hand_Rank = FCP_Hand_Rank.H, ever_change: boolean = false){
+  constructor(contact : Contact, username : string, ante: number,change: number = 0, bonus: number = 0, change_card_ids: Array<number> = [], hand : Array<Card> = [] as Card[], rank:FCP_Hand_Rank = FCP_Hand_Rank.H, ever_change: boolean = false){
     this.contact = contact;
     this.username = username;
     this.ante = ante;
     this.change = change;
+    this.bonus = bonus;
     this.hand = hand;
     this.rank = rank;
     this.change_card_ids = change_card_ids;
@@ -203,7 +233,7 @@ class FCPGame{
   no_shuffle: boolean
   change_rate:number
 
-  constructor(bot: Wechaty, no_shuffle: boolean = true, shuffling_threshold: number = 10, max_player: number = 5, change_rate: number = 1 ) {
+  constructor(bot: Wechaty, no_shuffle: boolean = false, shuffling_threshold: number = 10, max_player: number = 5, change_rate: number = 1 ) {
     this.bot = bot
     this.poker = new FiveCardPoker()
     this.max_player = max_player
@@ -294,7 +324,7 @@ class FCPGame{
     this.bot.on('message', ante)
 
     await sleep(20000)
-    //await sleep(5000)
+    // await sleep(3000)
 
     this.bot.off('message', ante)
 
@@ -403,7 +433,7 @@ class FCPGame{
     resp += "\n结算\n";
 
 
-    resp += "\n总奖池大小为"+ pot + "\n";
+    resp += "\n总奖池大小为"+ pot + "\n\n";
 
     let ranked_state = [...state].sort((a,b)=> FCPRank.compare(b[1].hand, a[1].hand)) // Descending
 
@@ -448,28 +478,46 @@ class FCPGame{
 
     let div_pot = Math.floor((pot/champion_keys.size)*100)/100;
 
-    resp += `\n恭喜 ${champion_names} 成功吃鸡！ 赢家收获 ${div_pot}B\n\n`;
+    resp += `恭喜 ${champion_names} 成功吃鸡！ 赢家收获 ${div_pot}B\n`;
 
     if(runnerup_keys.size){
-      resp += `\n恭喜 ${runnerup_names} 成功喝汤！ 返还换牌钱\n\n`;
+      resp += `恭喜 ${runnerup_names} 成功喝汤！ 返还换牌钱\n`;
     }
 
-    resp += "全体收益细则:\n\n";
+
+    let ever_pp = false;
+    for (let [key, s] of state) {
+      let odds = FCP_Bonus_Odds[s.rank];
+      s.bonus = odds * (s.ante + s.change);
+      if(s.bonus){
+        if(!ever_pp){
+          resp += "\n恭喜以下几个B中宝!\n\n"
+          ever_pp = true;
+        }
+        resp += s.username + ": " +FCP_Hand_Rank_Name[s.rank] + " " + s.bonus+"B\n";
+        resp += `=${odds} * 总下注 ${s.ante+s.change}\n`
+      }
+    }
+    if(!ever_pp){
+      resp += "\n无人中宝\n"
+    }
+
+    resp += "\n全体收益细则:\n\n";
 
     for(let [key, s] of state){
       resp += s.username + ": ";
       let act = await this.getAccount(key);
       if(champion_keys.has(key)){
         act.balance += div_pot
-        resp += "Win 净收益: "+(div_pot - s.ante - s.change) + "B";
+        resp += "吃鸡 净收益: "+(div_pot - s.ante - s.change + s.bonus) + "B";
       }
       else if(runnerup_keys.has(key)){
         act.balance += s.change
-        resp += "Win 净收益: "+(- s.ante) + "B";
+        resp += "喝汤 净收益: "+(- s.ante + s.bonus) + "B";
       }
       else
       {
-        resp += "Lose, 净收益: " + (- s.ante  - s.change) + "B";
+      resp += "菜 净收益: " + (- s.ante  - s.change + s.bonus) + "B";
       }
       resp += "\n";
     }
