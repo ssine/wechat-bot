@@ -35,8 +35,10 @@ export class GFMWatch {
       const raw = /m-progress-meter-heading">\$([\d,]+)/.exec(body)[1]
       const dollar = parseInt(raw.replace(',', ''))
       if (dollar !== last) {
-        for (let r of this.rooms) {
-          await r.say(`GoFundMe 筹款数额： $${dollar} (~ ￥${dollar * 6.46})`)
+        if (last !== -1) {
+          for (let r of this.rooms) {
+            await r.say(`GoFundMe 筹款数额： $${dollar} (~ ￥${dollar * 6.46})`)
+          }
         }
         last = dollar
         console.log(`new amount: ${dollar}, report done`)
