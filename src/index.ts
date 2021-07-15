@@ -1,7 +1,7 @@
 import { getBotInstance } from './bot'
 import ExercisePuncher from './exercise-puncher'
 import MessageSyncer from './syncer'
-import { message_sync, message_sync_2, message_sync_test, puncher as pc, repeaterRooms, coinConfig  } from './config'
+import { message_sync, message_sync_2, message_sync_test, puncher as pc, repeaterRooms, coinConfig, gfm_rooms  } from './config'
 //import { coinConfig  } from './config'
 import {
   sequenced_get_calender,
@@ -13,6 +13,7 @@ import {
 import { CronJob } from 'cron'
 import { Wechaty, Message } from 'wechaty'
 import { FontGen } from './fontgen/fontgen'
+import { GFMWatch } from './gfmwatch'
 import Repeater from './repeater'
 import Coin from './coin'
 
@@ -33,6 +34,9 @@ import Coin from './coin'
 
   const syncer3 = new MessageSyncer(bot, message_sync_2)
   await syncer3.init()
+
+  const gfm = new GFMWatch(bot, gfm_rooms)
+  await gfm.init()
 
   const fg = new FontGen(bot)
   await fg.init()
