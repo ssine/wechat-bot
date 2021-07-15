@@ -43,7 +43,7 @@ export class GFMWatch {
         last = dollar
         console.log(`new amount: ${dollar}, report done`)
       }
-      await fs.promises.appendFile('./data/gfm.csv', `${(new Date()).toUTCString()},${dollar}`)
+      await fs.promises.appendFile('./data/gfm.csv', `${(new Date()).getTime()},${dollar}\n`)
     }
 
     new CronJob('0 0 * * * *', () => {
