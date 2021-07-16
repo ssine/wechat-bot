@@ -37,7 +37,7 @@ export class GFMWatch {
       if (dollar !== last) {
         if (last !== -1) {
           for (let r of this.rooms) {
-            await r.say(`GoFundMe 筹款数额： $${dollar} (~ ￥${dollar * 6.46})`)
+            await r.say(`GoFundMe筹款数额+${dollar - last}，总计${dollar}💵，约合${dollar * 6.46}💴。`)
           }
         }
         last = dollar
