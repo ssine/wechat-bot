@@ -20,6 +20,13 @@ const getRecentDonations = async (intervalSecond: number) => {
   return donations.sort((a: any, b: any) => b.amount - a.amount)
 }
 
+const getRecentComments = async (intervalSecond: number) => {
+  const resp = await fetch('https://gateway.gofundme.com/web-gateway/v1/feed/mjzebp-lawsuit-against-pp10043-for-affected-chn-students/comments?limit=100')
+  const body = JSON.parse(await resp.text())
+  const contents = body.references.contents.filter((d: any) => Date.now() - new Date(d.comment.timestamp).getTime() < intervalSecond * 1000)
+  return contents.sort((a: any, b: any) => b.donation.amount - a.donation.amount).map((c: any) => c.comment)
+}
+
 export class GFMWatch {
   bot: Wechaty
   rooms: Room[]
@@ -47,10 +54,23 @@ export class GFMWatch {
       console.log('checking for gfm update...')
       const dollar = await getCurrentAmount()
       if (dollar !== last) {
-        let text = `GoFundMe筹款数额+${dollar - last}，总计${dollar}💵，约合${dollar * 6.46}💴。\n捐款名单：`
-        const donations = await getRecentDonations(3600)
-        for (let d of donations) {
-          text += `\n${d.name}： ${d.amount}`
+        let text = `GoFundMe筹款数额+${dollar - last}，总计${dollar}💵，约合${dollar * 6.46}💴。`
+        try {
+          let more = '\n捐款名单：'
+          const donations = await getRecentDonations(3600)
+          for (let d of donations) {
+            more += `\n${d.name}： ${d.amount}`
+          }
+          const comments = await getRecentComments(3600)
+          if (comments.length > 0) {
+            more += '\n新增评论：'
+            for (let c of comments) {
+              more += `\n${c.name}： ${c.comment}`
+            }
+          }
+          text += more
+        } catch (err) {
+          console.log(err)
         }
         for (let r of this.rooms) {
           await r.say(text)
