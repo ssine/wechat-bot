@@ -57,6 +57,8 @@ export class GFMWatch {
         }
         last = dollar
         console.log(`new amount: ${dollar}, report done`)
+      } else {
+        console.log('no amount change.')
       }
       await fs.promises.appendFile('./data/gfm.csv', `${(new Date()).getTime()},${dollar}\n`)
     }
@@ -64,7 +66,6 @@ export class GFMWatch {
     new CronJob('0 0 * * * *', () => {
       check()
     }, null, true, 'Asia/Shanghai')
-    check()
   }
 }
 
