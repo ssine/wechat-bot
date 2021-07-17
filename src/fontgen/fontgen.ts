@@ -20,17 +20,11 @@ export class FontGen {
 
   async init() {
     this.bot.on('message', async (msg: Message) => {
-      if (msg.text().startsWith('fg')) {
-        if (msg.text)
-        // const fb = FileBox.fromStream(await gen(msg.text().substr(3)), 't.gif')
-        for (let i = 3; i < msg.text().length; i++) {
-
-          const fb = FileBox.fromBuffer(await gen(msg.text()[i]), 't.png')
-          // const fb = FileBox.fromUrl("https://source-bed.oss-cn-beijing.aliyuncs.com/files/myanimated.gif")
-          
-          // const fb = FileBox.fromFile('./src/fontgen/myanimated.gif')
-          await msg.say(fb)
-        }
+      if (!msg.text().startsWith('fg')) return
+      if (msg.text().length > 17) return
+      for (let i = 3; i < msg.text().length; i++) {
+        const fb = FileBox.fromBuffer(await gen(msg.text()[i]), 't.png')
+        await msg.say(fb)
       }
     })
   }
