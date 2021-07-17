@@ -6,6 +6,20 @@ import {
 } from 'wechaty-puppet'
 import { CronJob } from 'cron'
 
+const getCurrentAmount = async () => {
+  const res = await fetch('https://www.gofundme.com/f/mjzebp-lawsuit-against-pp10043-for-affected-chn-students')
+  const body = await res.text()
+  const raw = /m-progress-meter-heading">\$([\d,]+)/.exec(body)[1]
+  return parseInt(raw.replace(',', ''))
+}
+
+const getRecentDonations = async (intervalSecond: number) => {
+  const resp = await fetch('https://gateway.gofundme.com/web-gateway/v1/feed/mjzebp-lawsuit-against-pp10043-for-affected-chn-students/donations?limit=100&sort=recent')
+  const body = JSON.parse(await resp.text())
+  const donations = body.references.donations.filter((d: any) => Date.now() - new Date(d.created_at).getTime() < intervalSecond * 1000)
+  return donations.sort((a: any, b: any) => b.amount - a.amount)
+}
+
 export class GFMWatch {
   bot: Wechaty
   rooms: Room[]
@@ -27,18 +41,19 @@ export class GFMWatch {
       this.rooms.push(room)
     }
 
-    let last = -1
+    let last = await getCurrentAmount()
+    console.log(`gfm initialized with ${last}`)
     const check = async () => {
       console.log('checking for gfm update...')
-      const res = await fetch('https://www.gofundme.com/f/mjzebp-lawsuit-against-pp10043-for-affected-chn-students')
-      const body = await res.text()
-      const raw = /m-progress-meter-heading">\$([\d,]+)/.exec(body)[1]
-      const dollar = parseInt(raw.replace(',', ''))
+      const dollar = await getCurrentAmount()
       if (dollar !== last) {
-        if (last !== -1) {
-          for (let r of this.rooms) {
-            await r.say(`GoFundMe筹款数额+${dollar - last}，总计${dollar}💵，约合${dollar * 6.46}💴。`)
-          }
+        let text = `GoFundMe筹款数额+${dollar - last}，总计${dollar}💵，约合${dollar * 6.46}💴。\n捐款名单：`
+        const donations = await getRecentDonations(3600)
+        for (let d of donations) {
+          text += `\n${d.name}： ${d.amount}`
+        }
+        for (let r of this.rooms) {
+          await r.say(text)
         }
         last = dollar
         console.log(`new amount: ${dollar}, report done`)
