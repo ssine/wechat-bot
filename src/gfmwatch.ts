@@ -21,7 +21,7 @@ const getRecentDonations = async (intervalSecond: number) => {
 }
 
 const getRecentComments = async (intervalSecond: number) => {
-  const resp = await fetch('https://gateway.gofundme.com/web-gateway/v1/feed/mjzebp-lawsuit-against-pp10043-for-affected-chn-students/comments?limit=100')
+  const resp = await fetch('https://gateway.gofundme.com/web-gateway/v1/feed/mjzebp-lawsuit-against-pp10043-for-affected-chn-students/comments?limit=100&sort=recent')
   const body = JSON.parse(await resp.text())
   const contents = body.references.contents.filter((d: any) => Date.now() - new Date(d.comment.timestamp + '.000-05:00').getTime() < intervalSecond * 1000)
   return contents.sort((a: any, b: any) => b.donation.amount - a.donation.amount).map((c: any) => c.comment)
@@ -48,39 +48,38 @@ export class GFMWatch {
       this.rooms.push(room)
     }
 
-    let last = await getCurrentAmount()
-    console.log(`gfm initialized with ${last}`)
     const check = async () => {
       console.log('checking for gfm update...')
-      const dollar = await getCurrentAmount()
-      if (dollar !== last) {
-        let text = `GoFundMe筹款数额+${dollar - last}，总计${dollar}💵，约合${dollar * 6.46}💴。`
-        try {
-          let more = '\n捐款名单：'
-          const donations = await getRecentDonations(3600)
-          for (let d of donations) {
-            more += `\n${d.name}： ${d.amount}`
-          }
-          const comments = await getRecentComments(3600)
-          if (comments.length > 0) {
-            more += '\n新增评论：'
-            for (let c of comments) {
-              more += `\n${c.name}： ${c.comment}`
-            }
-          }
-          text += more
-        } catch (err) {
-          console.log(err)
-        }
-        for (let r of this.rooms) {
-          await r.say(text)
-        }
-        last = dollar
-        console.log(`new amount: ${dollar}, report done`)
-      } else {
+      const donations = await getRecentDonations(3600)
+      if (!donations || donations.length === 0) {
         console.log('no amount change.')
+        return
       }
-      await fs.promises.appendFile('./data/gfm.csv', `${(new Date()).getTime()},${dollar}\n`)
+      const inc = donations.map((d: any) => d.amount).reduce((a: number, b: number) => a + b, 0)
+      const total = await getCurrentAmount()
+
+      let text = `GoFundMe筹款数额+${inc}，总计${total}💵，约合${total * 6.46}💴。\n捐款名单：`
+      for (let d of donations) {
+        text += `\n${d.name}： ${d.amount}`
+      }
+      try {
+        const comments = await getRecentComments(3600)
+        let more = '\n新增评论：'
+        if (comments && comments.length > 0) {
+          for (let c of comments) {
+            more += `\n${c.name}： ${c.comment}`
+          }
+        }
+        text += more
+      } catch (err) {
+        console.log(err)
+      }
+      for (let r of this.rooms) {
+        await r.say(text)
+      }
+      console.log(`new amount: ${total}, report done`)
+
+      await fs.promises.appendFile('./data/gfm.csv', `${(new Date()).getTime()},${total}\n`)
     }
 
     new CronJob('0 0 * * * *', () => {
