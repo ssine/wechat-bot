@@ -14,14 +14,14 @@ const getCurrentAmount = async () => {
 }
 
 const getRecentDonations = async (intervalSecond: number) => {
-  const resp = await fetch('https://gateway.gofundme.com/web-gateway/v1/feed/mjzebp-lawsuit-against-pp10043-for-affected-chn-students/donations?limit=100&sort=recent')
+  const resp = await fetch('https://gateway.gofundme.com/web-gateway/v1/feed/mjzebp-lawsuit-against-pp10043-for-affected-chn-students/donations?limit=20&sort=recent')
   const body = JSON.parse(await resp.text())
   const donations = body.references.donations.filter((d: any) => Date.now() - new Date(d.created_at).getTime() < intervalSecond * 1000)
   return donations.sort((a: any, b: any) => b.amount - a.amount)
 }
 
 const getRecentComments = async (intervalSecond: number) => {
-  const resp = await fetch('https://gateway.gofundme.com/web-gateway/v1/feed/mjzebp-lawsuit-against-pp10043-for-affected-chn-students/comments?limit=100&sort=recent')
+  const resp = await fetch('https://gateway.gofundme.com/web-gateway/v1/feed/mjzebp-lawsuit-against-pp10043-for-affected-chn-students/comments?limit=20&sort=recent')
   const body = JSON.parse(await resp.text())
   const contents = body.references.contents.filter((d: any) => Date.now() - new Date(d.comment.timestamp + '.000-05:00').getTime() < intervalSecond * 1000)
   return contents.sort((a: any, b: any) => b.donation.amount - a.donation.amount).map((c: any) => c.comment)
