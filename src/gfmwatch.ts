@@ -64,8 +64,9 @@ export class GFMWatch {
       }
       try {
         const comments = await getRecentComments(3600)
-        let more = '\n新增评论：'
+        let more = ''
         if (comments && comments.length > 0) {
+          more += '\n新增评论：'
           for (let c of comments) {
             more += `\n${c.name}： ${c.comment}`
           }
