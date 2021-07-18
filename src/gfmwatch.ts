@@ -23,7 +23,7 @@ const getRecentDonations = async (intervalSecond: number) => {
 const getRecentComments = async (intervalSecond: number) => {
   const resp = await fetch('https://gateway.gofundme.com/web-gateway/v1/feed/mjzebp-lawsuit-against-pp10043-for-affected-chn-students/comments?limit=100')
   const body = JSON.parse(await resp.text())
-  const contents = body.references.contents.filter((d: any) => Date.now() - new Date(d.comment.timestamp + '.000-06:00').getTime() < intervalSecond * 1000)
+  const contents = body.references.contents.filter((d: any) => Date.now() - new Date(d.comment.timestamp + '.000-05:00').getTime() < intervalSecond * 1000)
   return contents.sort((a: any, b: any) => b.donation.amount - a.donation.amount).map((c: any) => c.comment)
 }
 
