@@ -58,7 +58,7 @@ export class GFMWatch {
       const inc = donations.map((d: any) => d.amount).reduce((a: number, b: number) => a + b, 0)
       const total = await getCurrentAmount()
 
-      let text = `GoFundMe筹款数额+${inc}，总计${total}💵，约合${total * 6.46}💴。\n捐款名单：`
+      let text = `GoFundMe筹款数额+${inc}，总计${total}💵，约合${Math.floor(total * 6.46)}💴。\n捐款名单：`
       for (let d of donations) {
         text += `\n${d.name}： ${d.amount}`
       }
