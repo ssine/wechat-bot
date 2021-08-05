@@ -1,7 +1,7 @@
 import { getBotInstance } from './bot'
 import ExercisePuncher from './exercise-puncher'
 import MessageSyncer from './syncer'
-import { message_sync, message_sync_2, message_sync_test, puncher as pc, repeaterRooms, coinConfig, gfm_rooms  } from './config'
+import { message_sync, message_sync_2, message_sync_test, puncher as pc, repeaterRooms, coinConfig, gfm_rooms, statRooms  } from './config'
 //import { coinConfig  } from './config'
 import {
   sequenced_get_calender,
@@ -16,6 +16,7 @@ import { FontGen } from './fontgen/fontgen'
 import { GFMWatch } from './gfmwatch'
 import Repeater from './repeater'
 import Coin from './coin'
+import Stat from './stat'
 
 (async () => {
   const bot = await getBotInstance()
@@ -46,6 +47,9 @@ import Coin from './coin'
 
   const coin = new Coin(bot, coinConfig)
   await coin.init()
+
+  const stat = new Stat(bot, statRooms)
+  await stat.init()
 
   let me = await bot.Contact.find({alias: 'master'})
 
