@@ -38,7 +38,7 @@ const initRoom = async (room: Room) => {
       counter[msg.talker().id] = 1;
     }
 
-    if (await msg.mentionSelf()) {
+    if (await msg.mentionSelf() && msg.text().includes('龙王榜')) {
       await showRanking();
     }
   });

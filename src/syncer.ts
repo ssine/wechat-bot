@@ -6,6 +6,7 @@ import {
 type MessageSyncerConfig = {
   fromRooms: Record<string, RoomQueryFilter>
   toRooms: Record<string, RoomQueryFilter>
+  blacklist?: string[]
 }
 
 class MessageSyncer {
@@ -27,6 +28,14 @@ class MessageSyncer {
       if (!room) {
         console.error(`room for ${query.id || query.topic} not found!`)
         return
+      }
+      if (this.config.blacklist) {
+        room.on('join', (invitees) => {
+          const blocked = invitees.filter(invitee => this.config.blacklist.includes(invitee.id))
+          if (blocked.length > 0) {
+            room.say(`=== Warning ===\nBlocked contact ${blocked.join(',')} joined room!`)
+          }
+        })
       }
       this.fromRooms.push({
         room: room,
@@ -62,6 +71,12 @@ class MessageSyncer {
           }
           return false
         })) {
+
+          if (this.config.blacklist && this.config.blacklist.includes(msg.talker().id)) {
+            msg.say(`User ${msg.talker().id} blocked, stop forwarding.`)
+            return
+          }
+
           for (const targetRoom of this.toRooms) {
             if (targetRoom.room.id === fromRoomId)
               continue
